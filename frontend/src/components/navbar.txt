@@ -1,0 +1,60 @@
+1. Navbar code before design/method changes (29/04/2025):
+
+    ###
+    import React from 'react'
+    import {assets} from '../assets/assets'
+    import { NavLink } from 'react-router-dom'
+
+    const Navbar = () => {
+    return (
+        <div sticky="top" className='flex items-center justify-between py-5 bg-[#FAF9F6] text-[#23150F]'>
+
+        <div className='leftbar'>
+            <ul className="nav-left hidden sm:flex text-sm  gap-10 pl-10">
+            <NavLink to='/' className='flex flex-col items-center gap-1 hover:text-accent' >
+                <p>HOME</p>
+                <hr className='w-2/4 border-none h-[2.5px] bg-accent hidden'/>
+            </NavLink>
+
+            <NavLink to='/catalog' className='flex flex-col items-center gap-1 hover:text-accent' >
+                <p>CATALOG</p>
+                <hr className='w-2/4 border-none h-[2.5px] bg-accent hidden'/>
+            </NavLink>
+
+            <NavLink to='/product' className='flex flex-col items-center gap-1 hover:text-accent' >
+                <p>PRODUCT</p>
+                <hr className='w-2/4 border-none h-[2.5px] bg-accent hidden'/>
+            </NavLink>
+            </ul>
+        </div>
+        
+
+        <img src={assets.kwulogo} className='mr-20 w-35' alt="KWU Logo" />
+        
+        <div className='rightbar'>
+            <ul className="nav-right flex text-sm gap-10 pr-10">
+            <NavLink to='/cart' className='relative flex flex-col items-center gap-1 ' >
+                {/*<img src={assets.bag_icon} className='w-7' alt="" />*/}
+                <p className='hover:text-accent'>CART</p> {/* Add cartCount CART{cartCount} */}
+                <p className='absolute right-[-20px] w-4 text-center bg-accent'>0</p>
+                <hr className='w-2/4 border-none h-[2.5px] bg-accent hidden'/>
+            </NavLink>
+
+            <NavLink to='/login' className='flex flex-col items-center gap-1' >
+                <p className='hover:text-accent'>LOGIN</p>
+                {/*<img src={assets.profile} className='w-6' alt="" />*/} 
+                <hr className='w-2/4 border-none h-[2.5px] bg-accent hidden'/>
+            </NavLink>
+
+            <img src={assets.menu_icon} className="w-5 cursor-pointer hover:text-accent sm:hidden" alt="" />
+            </ul>
+        </div>
+        
+        
+        </div>
+    )
+    }
+
+    export default Navbar
+
+2. 

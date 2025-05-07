@@ -1,1 +1,66 @@
 @import "tailwindcss";
+
+@font-face {
+    font-family: 'Couture';
+    src: url('./assets/fonts/couture-bld.otf') format('woff2');
+  }
+@font-face {
+  font-family: 'Creato';
+  src: url('./assets/fonts/CreatoDisplay-Medium.otf');
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: 'Creato';
+  src: url('./assets/fonts/CreatoDisplay-Bold.otf');
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: 'Creato';
+  src: url('./assets/fonts/CreatoDisplay-Light.otf');
+  font-weight: 300;
+}
+
+@font-face {
+  font-family: 'Mayeka';
+  src: url('./assets/fonts/Mayeka\ Bold\ Demo.otf');
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: 'Atemica';
+  src: url('./assets/fonts/AtemicaSans_PERSONAL_USE_ONLY.otf');
+  font-weight: 500;
+}
+
+@theme {
+  --color-accent: #FF882D;
+  --color-offwhite: #FAF9F6;
+  --color-matteblack: #23150F;
+  --font-display: "Creato", "sans-serif";
+  --font-mayeka: "Mayeka", "sans-serif";
+  --font-atemica: "Atemica", "sans-serif";
+  --font-couture: "Couture", "sans-serif";
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Couture', sans-serif;
+}
+
+a.active hr{
+  display: block;
+}
+
+  /* Tambahkan di file CSS atau dalam tailwind style */
+  .custom-prev, .custom-next {
+    @apply bg-accent text-white p-3 rounded-full shadow-lg;
+  }
+
+  .custom-prev:hover, .custom-next:hover {
+    @apply opacity-80;
+  }
