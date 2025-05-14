@@ -1,0 +1,1 @@
+## npm install express mongoose cors dotenv jsonwebtoken multer nodemone razorpay stripe validator cloudinary

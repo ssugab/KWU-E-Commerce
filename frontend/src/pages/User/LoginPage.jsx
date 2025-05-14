@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Button from '../../components/Button';
+import toast, { Toaster } from 'react-hot-toast';
+import authService from '../../services/authService';
 
-const Login = () => {
+const LoginPage = () => {
   const navigate = useNavigate();
   const [currentState, setCurrentState] = useState('Sign Up'); // Login/Signup
   const [email, setEmail] = useState('');
@@ -10,6 +13,7 @@ const Login = () => {
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,43 +25,55 @@ const Login = () => {
     return re.test(phone);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setIsLoading(true);
 
-    if (!email || !password || (currentState === "Sign Up" && !name)) {
-      setError("Harap isi semua bidang yang wajib diisi");
-      return;
+    try {
+      if (!email || !password || !phone || (currentState === "Sign Up" && !name)) {
+        throw new Error("Harap isi semua bidang yang wajib diisi!");
+      }
+
+      if (!validateEmail(email)) {
+        throw new Error("Format email tidak valid");
+      }
+
+      if (phone && !validatePhone(phone)) {
+        throw new Error("Format nomor telepon tidak valid (10-13 digit)");
+      }
+
+      if (password.length < 6) {
+        throw new Error("Password minimal 6 karakter");
+      }
+
+      if (currentState === 'Login') {
+        const response = await authService.login(email, password);
+        toast.success('Login berhasil!');
+        setSuccess('Login berhasil!');
+      } else {
+        const response = await authService.signup(name, email, phone, password);
+        toast.success('Registrasi berhasil!');
+        setSuccess('Registrasi berhasil!');
+      }
+
+      // Redirect setelah 2 detik
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+
+    } catch (error) {
+      setError(error.message);
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
     }
-
-    if (!validateEmail(email)) {
-      setError("Format email tidak valid");
-      return;
-    }
-
-    if (currentState === "Sign Up" && phone && !validatePhone(phone)) {
-      setError("Format nomor telepon tidak valid (10-13 digit)");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password minimal 6 karakter");
-      return;
-    }
-
-    // Simulasi proses login/register
-    console.log({ email, password, name, phone });
-    setSuccess(currentState === 'Login' ? 'Login berhasil!' : 'Registrasi berhasil!');
-    
-    // Redirect setelah 2 detik
-    setTimeout(() => {
-      navigate('/');
-    }, 2000);
   };
 
   return (
     <div className='p-5'>
+      <Toaster position="top-center" />
       <button 
         onClick={() => navigate('/')}
         className="mb-4 font-atemica text-gray-600 hover:text-gray-800 flex items-center"
@@ -68,35 +84,13 @@ const Login = () => {
         Kembali ke Beranda
       </button>
 
-      <form className='flex flex-col w-full max-w-2xl m-auto mt-5 gap-4 justify-center items-center mb-20' onSubmit={handleSubmit}>
+      <form className='flex flex-col w-full max-w-2xl m-auto mt-15 gap-4 justify-center items-center mb-20' onSubmit={handleSubmit}>
         <div className='inline-flex items-center'>
           <p className='font-atemica font-bold text-3xl'>{currentState}</p>
         </div>
 
-        {/* Toggle Login/Sign Up */}
-        <p className="block ml-[-490px] font-display text-sm cursor-pointer text-gray-500 hover:text-gray-700" onClick={() => setCurrentState(currentState === 'Login' ? 'Sign Up' : 'Login')}>
-          {currentState === 'Login' ? 'Belum punya akun? ' : 'Sudah punya akun? '}
-          <span className="text-accent hover:text-amber-700 font-bold">
-            {currentState === 'Login' ? 'Sign Up' : 'Login'}
-          </span>
-        </p>
-
-        {/* Error Message */}
-        {error && (
-          <div className="w-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">{error}</span>
-          </div>
-        )}
-
-        {/* Success Message */}
-        {success && (
-          <div className="w-full bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">{success}</span>
-          </div>
-        )}
-
         {/* Input Field */}
-        <div className='flex flex-col w-full bg-offwhite p-10 pb-6 gap-8 rounded-lg border-2 border-accent font-display shadow-xl'>
+        <div className='flex flex-col w-full bg-offwhite p-10 pb-6 mt-5 mb-10 gap-6 rounded-lg border-2 font-display shadow-xl'>
           {currentState === 'Login' ? null : (
             <div className="w-full">
               <label className="block text-sm font-bold mb-2 text-gray-700">Nama</label>
@@ -106,6 +100,7 @@ const Login = () => {
                 onChange={(e) => setName(e.target.value)} 
                 className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
                 placeholder='Masukkan nama lengkap' 
+                disabled={isLoading}
               />
             </div>
           )}
@@ -117,6 +112,7 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
               placeholder='contoh@email.com' 
+              disabled={isLoading}
             />
           </div>
           <div className="w-full">
@@ -127,6 +123,7 @@ const Login = () => {
               onChange={(e) => setPhone(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
               placeholder='08xxxxxxxxxx' 
+              disabled={isLoading}
             />
           </div>
           <div className="w-full">
@@ -137,25 +134,44 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
               placeholder='Minimal 6 karakter' 
+              disabled={isLoading}
             />
           </div>
           
           {currentState === "Login" && (
-            <p className="font-display text-sm text-gray-500 cursor-pointer hover:text-gray-700 hover:underline pt-4">
+            <p className="font-display text-sm text-gray-500 cursor-pointer hover:text-gray-700 hover:underline">
               Lupa Password?
             </p>
           )}
        
-          <button 
+          {/* <button  Button manual
             type="submit" 
-            className="mt-5 w-full bg-accent hover:bg-amber-600 border-2 border-black text-white py-3 px-4 rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-          >
+            className={`w-full bg-accent hover:bg-amber-600 border-2 border-black text-offmatte py-3 px-4 rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all
+          ${currentState === 'Sign Up' ? 'mt-4' : ''}`}>
             {currentState === 'Login' ? 'Login' : 'Sign Up'}
-          </button>
+          </button>} */}
+
+          <Button 
+            text={isLoading ? 'Loading...' : (currentState === 'Login' ? 'Login' : 'Sign Up')} 
+            type="submit"
+            className={`w-full text-center py-3 ${currentState === 'Sign Up' ? 'mt-6' : ''}`}
+            disabled={isLoading}
+          />
+
+          {/* Toggle Login/Sign Up */}
+          <p className="justify-start font-display text-sm text-gray-500 hover:text-gray-700">
+            {currentState === 'Login' ? 'Belum punya akun? ' : 'Sudah punya akun? '}
+            <span 
+              className="text-accent cursor-pointer hover:text-amber-700 hover:underline font-bold"  
+              onClick={() => !isLoading && setCurrentState(currentState === 'Login' ? 'Sign Up' : 'Login')}
+            >
+              {currentState === 'Login' ? 'Sign Up' : 'Login'}
+            </span>
+          </p>
         </div>
       </form>
     </div>
   );
 };
 
-export default Login;
+export default LoginPage;

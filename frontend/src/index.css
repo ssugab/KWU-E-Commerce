@@ -37,6 +37,7 @@
 @theme {
   --color-accent: #FF882D;
   --color-offwhite: #FAF9F6;
+  --color-offwhite2: #fffff2;
   --color-matteblack: #23150F;
   --font-display: "Creato", "sans-serif";
   --font-mayeka: "Mayeka", "sans-serif";
@@ -50,6 +51,7 @@ html {
 
 body {
     font-family: 'Couture', sans-serif;
+    background-color: var(--color-offwhite2);
 }
 
 a.active hr{
@@ -61,6 +63,9 @@ a.active hr{
     @apply bg-accent text-white p-3 rounded-full shadow-lg;
   }
 
-  .custom-prev:hover, .custom-next:hover {
-    @apply opacity-80;
+  .custom-prev:hover{
+    @apply shadow-[-2.5px_2.5px_0px_0px_rgba(0,0,0,1)] ;
+  }
+  .custom-next:hover {
+    @apply shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)]
   }
