@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useState, useEffect } from 'react'
 import ProductLists from '../components/Products/ProductLists'
 import ProductGrid3d from '../components/ProductGrid3d'
 import { ShopContext } from '../context/ShopContext'
@@ -10,10 +10,15 @@ const Catalog = () => {
   const { products } = useContext(ShopContext);
   const [ showCategory, setShowCategory] = useState(false);
   const [ showPrice, setShowPrice] = useState(false);
+  const [set]
 
   // const filteredProducts = products.filter(product => {
   //   product.filter(product => product.category === 'Shirts')
   // })
+
+  useEffect(() => {
+    set
+  },[])
 
   return (
     <div className='flex flex-col'>
