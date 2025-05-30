@@ -1,7 +1,7 @@
 import React from 'react';
 import { assets } from '../assets/assets';
 import { NavLink } from 'react-router-dom';
-import { CardContainer, CardBody, CardItem } from './ui/3d-card';
+import { CardContainer, CardBody, CardItem } from './UI/3d-card';
 
 const ProductGrid = () => {
   const products = [
@@ -11,10 +11,8 @@ const ProductGrid = () => {
   ];
 
   return (
-    <section className="p-10">
-      <div className="flex justify-center mb-6">
-        <h2 className="text-center text-3xl font-bold">Our Products</h2>
-      </div>
+    <section className="px-10">
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {products.map((product, index) => (
           <CardContainer key={index} className="w-full">

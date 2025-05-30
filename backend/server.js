@@ -3,9 +3,10 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/mongodb.js';
-import connectCloudinary from './config/cloudinary.js';
+import connnectCloudinary from './config/cloudinary.js';
 // import productRoutes from './routes/productRoutes.js';
 import userRouter from './routes/userRoutes.js';
+import productRoutes from './routes/productRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -13,14 +14,14 @@ dotenv.config();
 // Config
 const app = express();
 connectDB();
-connectCloudinary();
+
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Routes
-// app.use('/api', productRoutes);
+app.use('/api/catalog', productRoutes);
 app.use('/api/user', userRouter);
 
 // API Endpoints

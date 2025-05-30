@@ -1,9 +1,6 @@
 @import "tailwindcss";
 
-@font-face {
-    font-family: 'Couture';
-    src: url('./assets/fonts/couture-bld.otf') format('woff2');
-  }
+
 @font-face {
   font-family: 'Creato';
   src: url('./assets/fonts/CreatoDisplay-Medium.otf');
@@ -11,21 +8,15 @@
 }
 
 @font-face {
-  font-family: 'Creato';
+  font-family: 'Creato Bold';
   src: url('./assets/fonts/CreatoDisplay-Bold.otf');
   font-weight: 700;
 }
 
 @font-face {
-  font-family: 'Creato';
+  font-family: 'Creato Light';
   src: url('./assets/fonts/CreatoDisplay-Light.otf');
   font-weight: 300;
-}
-
-@font-face {
-  font-family: 'Mayeka';
-  src: url('./assets/fonts/Mayeka\ Bold\ Demo.otf');
-  font-weight: 700;
 }
 
 @font-face {
@@ -34,15 +25,29 @@
   font-weight: 500;
 }
 
+@font-face {
+  font-family: 'Sora';
+  src: url('./assets/fonts/Sora-Bold.ttf');
+}
+
+@font-face {
+  font-family: 'BricolageGrotesque';
+  src: url('./assets/fonts/BricolageGrotesque_24pt-Bold.ttf');
+}
+
+
 @theme {
   --color-accent: #FF882D;
   --color-offwhite: #FAF9F6;
   --color-offwhite2: #fffff2;
   --color-matteblack: #23150F;
+
   --font-display: "Creato", "sans-serif";
-  --font-mayeka: "Mayeka", "sans-serif";
+  --font-display-bold: "Creato Bold", "sans-serif";
+  --font-display-light: "Creato Light", "sans-serif";
   --font-atemica: "Atemica", "sans-serif";
-  --font-couture: "Couture", "sans-serif";
+  --font-sora: "Sora", "sans-serif";
+  --font-bricolage: "BricolageGrotesque", "sans-serif";
 }
 
 html {
@@ -50,7 +55,7 @@ html {
 }
 
 body {
-    font-family: 'Couture', sans-serif;
+    font-family: 'Sora', sans-serif;
     background-color: var(--color-offwhite2);
 }
 
@@ -58,10 +63,11 @@ a.active hr{
   display: block;
 }
 
-  /* Tambahkan di file CSS atau dalam tailwind style */
-  .custom-prev, .custom-next {
-    @apply bg-accent text-white p-3 rounded-full shadow-lg;
-  }
+
+/* Tambahkan di file CSS atau dalam tailwind style */
+.custom-prev, .custom-next {
+  @apply bg-accent text-white p-3 rounded-full shadow-lg;
+}
 
   .custom-prev:hover{
     @apply shadow-[-2.5px_2.5px_0px_0px_rgba(0,0,0,1)] ;
@@ -69,3 +75,42 @@ a.active hr{
   .custom-next:hover {
     @apply shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)]
   }
+
+  .shadow-accent{
+    @apply shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)];
+  }
+
+  .shadow-matteblack{
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
+  }
+
+  .hover\:shadow-matteblack:hover{
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
+  }
+
+  .shadow-matteblack-thin{
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,1) !important;
+  }
+
+/* Swiper Pagination */
+  .swiper-pagination {
+    /* Jika Anda ingin bullets lebih renggang */
+    padding-top: 10px;
+  }
+
+  .swiper-pagination .swiper-pagination-bullet {
+    border-radius: 0 !important;           /* Hilangkan sudut membulat */ 
+    width: 20px !important;                 /* Lebar rectangle */ 
+    height: 8px !important;                 /* Tinggi rectangle */ 
+    margin: 0 4px !important;               /* Spasi antar bullet */ 
+    background: rgba(0, 0, 0, 0.3) !important; /* Warna bullet tidak aktif */ 
+    opacity: 1 !important;                  
+  }
+
+/* globals.css atau index.css setelah impor swiper.css */
+.swiper-pagination .custom-bullet {
+  @apply w-4 h-4 border-2 border-matteblack bg-transparent mx-1 transition-all duration-300;
+}
+.swiper-pagination .custom-bullet.swiper-pagination-bullet-active {
+  @apply !bg-orange-500 shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] rounded-full;
+}

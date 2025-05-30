@@ -6,9 +6,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  npm: {
+    type: String,
+    required: [true, 'NPM is required'],
+    unique: true
+  },
+  major: {
+    type: String,
+    required: [true, 'Major is required']
+  },
   email: {
     type: String,
-    required: true,
+    required: [true, 'Email is required'],
     unique: true
   },
   password: {
@@ -19,10 +28,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  cartData: {
-    type: Object,
-    default: {}
-  },
+  cartData: [ 
+    {
+      quantity:{
+        type: Number,
+      },
+    },
+  ],
   role: {
     type: String,
     enum: ['user', 'admin'],

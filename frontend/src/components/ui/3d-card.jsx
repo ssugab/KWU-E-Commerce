@@ -18,7 +18,7 @@ export const CardContainer = ({
       <div
         ref={containerRef}
         className={cn(
-          "py-20 flex items-center justify-center",
+          "py-12 flex items-center justify-center",
           containerClassName
         )}
       >

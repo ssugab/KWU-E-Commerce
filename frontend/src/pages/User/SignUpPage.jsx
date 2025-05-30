@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { NavLink } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Button from '../../components/Button';
 import toast, { Toaster } from 'react-hot-toast';
+import authService from '../../services/authService';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -10,9 +11,12 @@ const SignUpPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [npm, setNpm] = useState('');
+  const [major, setMajor] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -83,19 +87,40 @@ const SignUpPage = () => {
         </div>
 
         {/* Input Field */}
-        <div className='flex flex-col w-full bg-offwhite p-10 pb-6 mt-5 mb-10 gap-6 rounded-lg border-2 font-display shadow-xl'>
+        <div className='flex flex-col w-full bg-offwhite p-10 pb-6 mt-5 mb-10 gap-6 rounded-lg border-2 font-display shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] '>
           {currentState === 'Login' ? null : (
             <div className="w-full">
-              <label className="block text-sm font-bold mb-2 text-gray-700">Nama</label>
+              <label className="block text-sm font-bold mb-2 text-gray-700">Name</label>
               <input 
                 type="text" 
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 
                 className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-                placeholder='Masukkan nama lengkap' 
+                placeholder='ex: Yves Saint Laurent' 
               />
             </div>
           )}
+
+          <div className="w-full">
+            <label className="block text-sm font-bold mb-2 text-gray-700">NPM</label>
+            <input 
+              type="text" 
+              value={npm} 
+              onChange={(e) => setNpm(e.target.value)} 
+              className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
+              placeholder='ex: 2208xxx' 
+            />
+          </div>
+          <div className="w-full">
+            <label className="block text-sm font-bold mb-2 text-gray-700">Major</label>
+            <input 
+              type="text" 
+              value={major} 
+              onChange={(e) => setMajor(e.target.value)} 
+              className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
+              placeholder='ex: Sistem Informasi' 
+            />
+          </div>
           <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Email</label>
             <input 
@@ -103,7 +128,7 @@ const SignUpPage = () => {
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-              placeholder='contoh@email.com' 
+              placeholder='example@email.com' 
             />
           </div>
           <div className="w-full">
@@ -123,13 +148,13 @@ const SignUpPage = () => {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-              placeholder='Minimal 6 karakter' 
+              placeholder='Minimal 6 characters' 
             />
           </div>
           
           {currentState === "Login" && (
             <p className="font-display text-sm text-gray-500 cursor-pointer hover:text-gray-700 hover:underline">
-              Lupa Password?
+              Forgot Password?
             </p>
           )}
 
@@ -140,13 +165,13 @@ const SignUpPage = () => {
           />
 
           {/* Toggle Login/Sign Up */}
-          <p className="justify-start font-display text-sm text-gray-500 hover:text-gray-700">
-            <NavLink to='/frontend/src/pages/User/LoginPage.jsx'>
-              <p>Sudah punya akun? </p>
+          <p className="flex gap-1 justify-start font-display text-sm text-gray-500 hover:text-gray-700">
+            <p>Already have an account? </p>
+            <Link to='/login'>
               <span className="text-accent cursor-pointer hover:text-amber-700 hover:underline font-bold"  onClick={() => setCurrentState(currentState === 'Login' ? 'Sign Up' : 'Login')}>
                 Login
               </span>
-            </NavLink> 
+            </Link> 
           </p>
 
         </div>

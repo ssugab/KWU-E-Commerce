@@ -96,12 +96,33 @@ const signUpUser = async (req, res) => {
 
 // Logout User Route
 const logOutUser = async (req, res) => {
+  try {
+    
+  } catch (error) {
+    
+  }
+}
 
+// Get User Profile Route
+const getUserProfile = async (req, res) => { 
+  try {
+    const {userId} = req.user;
+    const user = await userModel.findById(userId);
+    res.json({success:true, user})
+
+    
+  } catch (error) {
+    res.json({success:false, error})    
+  }
 }
 
 // Admin Login Route
 const adminLogin = async (req, res) => {
-
+  try {
+    
+  } catch (error) {
+    
+  }
 }
 
-export { loginUser, signUpUser, adminLogin}
+export { loginUser, signUpUser, adminLogin, getUserProfile}

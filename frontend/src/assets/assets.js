@@ -12,15 +12,15 @@ import product1 from './img/surreal-tshirt-mockup.jpg'
 
 export const assets = {
   kwulogo,
-  ospekkit,
   menu_icon,
   shopping_bag_icon,
   profile,
   return_icon,
+
   product2,
   imagePromo,
   product1,
-
+  ospekkit,
 
 }
 
@@ -34,7 +34,28 @@ export const products = [
   },
   {
     id: 2,
-    name: 'Kaos Fasilkom',
+    name: 'Kaos Fasilkom 2022',
+    price: 50000,
+    image: 'product2',
+    description: 'kaos Fasilkom yang menandakan kamu adalah bagian dari KM Fasilkom UPN Veteran Jawa Timur'
+  },
+  {
+    id: 3,
+    name: 'Kaos Fasilkom 2025',
+    price: 50000,
+    image: 'imagePromo',
+    description: 'kaos Fasilkom yang menandakan kamu adalah bagian dari KM Fasilkom UPN Veteran Jawa Timur'
+  },
+  {
+    id: 4,
+    name: 'Kaos Fasilkom 2023',
+    price: 50000,
+    image: 'product2',
+    description: 'kaos Fasilkom yang menandakan kamu adalah bagian dari KM Fasilkom UPN Veteran Jawa Timur'
+  },
+  {
+    id: 5,
+    name: 'Kaos Fasilkom 2024',
     price: 50000,
     image: 'product2',
     description: 'kaos Fasilkom yang menandakan kamu adalah bagian dari KM Fasilkom UPN Veteran Jawa Timur'

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Button from '../../components/Button';
 import toast, { Toaster } from 'react-hot-toast';
 import authService from '../../services/authService';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const [currentState, setCurrentState] = useState('Sign Up'); // Login/Signup
+  const [currentState, setCurrentState] = useState('Login'); // Login/Signup
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -90,16 +90,16 @@ const LoginPage = () => {
         </div>
 
         {/* Input Field */}
-        <div className='flex flex-col w-full bg-offwhite p-10 pb-6 mt-5 mb-10 gap-6 rounded-lg border-2 font-display shadow-xl'>
+        <div className='flex flex-col w-full bg-offwhite p-10 pb-6 mt-5 mb-10 gap-6 rounded-lg border-2 font-display shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'>
           {currentState === 'Login' ? null : (
             <div className="w-full">
-              <label className="block text-sm font-bold mb-2 text-gray-700">Nama</label>
+              <label className="block text-sm font-bold mb-2 text-gray-700">Name</label>
               <input 
                 type="text" 
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 
                 className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-                placeholder='Masukkan nama lengkap' 
+                placeholder='Insert Your Name' 
                 disabled={isLoading}
               />
             </div>
@@ -111,12 +111,12 @@ const LoginPage = () => {
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-              placeholder='contoh@email.com' 
+              placeholder='example@email.com' 
               disabled={isLoading}
             />
           </div>
           <div className="w-full">
-            <label className="block text-sm font-bold mb-2 text-gray-700">No Telepon</label>
+            <label className="block text-sm font-bold mb-2 text-gray-700">Phone Number</label>
             <input 
               type="text" 
               value={phone} 
@@ -133,14 +133,14 @@ const LoginPage = () => {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-              placeholder='Minimal 6 karakter' 
+              placeholder='6 Characters Minimum' 
               disabled={isLoading}
             />
           </div>
           
           {currentState === "Login" && (
             <p className="font-display text-sm text-gray-500 cursor-pointer hover:text-gray-700 hover:underline">
-              Lupa Password?
+              Forgot Password?
             </p>
           )}
        
@@ -160,13 +160,15 @@ const LoginPage = () => {
 
           {/* Toggle Login/Sign Up */}
           <p className="justify-start font-display text-sm text-gray-500 hover:text-gray-700">
-            {currentState === 'Login' ? 'Belum punya akun? ' : 'Sudah punya akun? '}
+          {currentState === 'Login' ? 'Don\'t have an account? ' : 'Have an account? '}
+            <Link to='/signup'>
             <span 
               className="text-accent cursor-pointer hover:text-amber-700 hover:underline font-bold"  
               onClick={() => !isLoading && setCurrentState(currentState === 'Login' ? 'Sign Up' : 'Login')}
             >
               {currentState === 'Login' ? 'Sign Up' : 'Login'}
             </span>
+            </Link>
           </p>
         </div>
       </form>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 const Button = ({ text, to, align = 'center', className, type, onClick }) => {
   const justify = align === 'left' ? 'justify-start' : 'justify-center'
@@ -10,7 +10,7 @@ const Button = ({ text, to, align = 'center', className, type, onClick }) => {
         <button 
           type="submit"
           onClick={onClick}
-          className={`bg-accent border-black border-2 hover:bg-amber-600 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-matteblack py-2 px-4 rounded-lg transition-all ${className}`}
+          className={`font-bricolage text-xl bg-accent border-black border-3 hover:bg-amber-600 hover:shadow-matteblack text-matteblack py-2 px-4 rounded-lg transition-all ${className}`}
         >
           {text}
         </button>
@@ -20,12 +20,12 @@ const Button = ({ text, to, align = 'center', className, type, onClick }) => {
 
   return (
     <div className={`w-full flex ${justify}`}>
-      <NavLink 
+      <Link 
         to={to} 
-        className={`bg-accent border-black border-2 hover:bg-amber-600 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-matteblack py-2 px-4 rounded-lg transition-all ${className}`}
+        className={`font-bricolage bg-accent border-black border-3 hover:bg-amber-600 hover:shadow-matteblack text-matteblack py-2 px-4 rounded-lg transition-all ${className}`}
       >
         {text}
-      </NavLink>
+      </Link>
     </div>
   )
 }

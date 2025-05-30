@@ -48,7 +48,17 @@ const authService = {
 
   isAuthenticated: () => {
     return !!localStorage.getItem('token');
-  }
+  },
+
+  getProfile: async (userId) => {
+    try {
+      const respone = await axios.get(API_ENDPOINTS.USER.PROFILE, { 
+        
+      })
+    } catch (error) {
+      
+    }
+  },
 };
 
 export default authService; 
