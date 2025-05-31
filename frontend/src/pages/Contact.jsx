@@ -35,8 +35,8 @@ const Contact = () => {
   return (
     <div className='min-h-screen bg-offwhite2 pb-12'>
       {/* Header Section */}
-      <div className="flex justify-center md:justify-start bg-accent">
-        <h1 className="font-atemica text-center text-4xl ml-0 md:ml-15 mt-10 mb-8 text-matteblack">Contact Us</h1>
+      <div className="flex justify-center md:justify-start bg-accent border-b-4">
+        <h1 className="font-atemica text-center text-3xl ml-0 md:ml-15 mt-10 mb-5">Contact Us</h1>
       </div>
 
       {/* Contact Form Container */}

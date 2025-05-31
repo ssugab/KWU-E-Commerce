@@ -1,8 +1,12 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import authService from '../../services/authService';
+import { ShopContext } from '../../context/ShopContext';
 import { assets } from '../../assets/assets';
 
 const Profile = () => {
+  const { user } = useContext(ShopContext);
+  console.log(user);
+  
   return (
     <div className='flex flex-col h-screen gap-5'>
       <h1 className='text-2xl font-atemica justify-start p-10'>My Profile</h1>

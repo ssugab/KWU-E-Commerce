@@ -13,6 +13,7 @@ const getAllProducts = async (req, res) => {
       page = 1, 
       limit = 12, 
       category, 
+      stock,
       sort = 'createdAt',
       order = 'desc'
     } = req.query;
@@ -25,9 +26,9 @@ const getAllProducts = async (req, res) => {
 
     // Build sort
     const sortOptions = {};
-    sortOptions[sort] = order === 'desc' ? -1 : 1;
+    sortOptions[sort] = order === 'asc' ? 1 : -1;
 
-    // Calculate pagination
+    // Calculate pagination 
     const skip = (page - 1) * limit;
 
     // Get products with pagination
@@ -35,10 +36,11 @@ const getAllProducts = async (req, res) => {
       .sort(sortOptions)
       .skip(skip)
       .limit(parseInt(limit))
-      .select('name description price image rating category');
+      .select('name description price images sizes category stock createdAt');
 
     // Get total count for pagination
     const total = await productModel.countDocuments(query);
+
     // const products = await productModel.find({});
     //res.json({success: true, products, total})
 
@@ -46,12 +48,11 @@ const getAllProducts = async (req, res) => {
       success: true,
       data: products,
       pagination: {
-        total,
-        page: parseInt(page),
-        pages: Math.ceil(total / limit)
+         total,
+         page: parseInt(page),
+         pages: Math.ceil(total / limit)
       }
     });
-
 
   } catch (error) {
     console.log(error);

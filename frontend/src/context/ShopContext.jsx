@@ -8,7 +8,7 @@ const ShopContextProvider = (props) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [catalog, setCatalog] = useState([]);
   const [cart, setCart] = useState([]);
-  const [category, setCategory] = useState([]);
+  const [category] = useState([]);
 
   const addToCart = (productId) => {
     setCart(prev => {
@@ -34,16 +34,24 @@ const ShopContextProvider = (props) => {
 
   const getCatalog = async () => {
     try {
-      console.log('🔄 Fetching catalog from:', `${backendUrl}/api/catalog/`);
-      console.log('📍 Backend URL:', backendUrl);
+      //console.log('🔄 Fetching catalog from:', `${backendUrl}/api/catalog/`);
+      //console.log('📍 Backend URL:', backendUrl);
       
       const response = await axios.get(`${backendUrl}/api/catalog/`);
-      console.log('📦 Response received:', response);
-      console.log('📊 Response data:', response.data);
+      //console.log('📦 Response received:', response);
+      //console.log('📊 Response data:', response.data);
       
       if(response.data.success){
-        console.log('✅ Success! Catalog data:', response.data.products);
-        setCatalog(response.data.products);
+        console.log('✅ Success! Catalog data:', response.data.data);
+        
+        // Map _id ke id untuk konsistensi
+        const mappedData = response.data.data.map(item => ({
+          ...item,
+          id: item._id // Tambahkan field id yang sama dengan _id
+        }));
+        
+        //console.log('🔄 Mapped catalog data:', mappedData);
+        setCatalog(mappedData);
       } else {
         console.log('❌ API returned success: false');
         console.log('📝 Error message:', response.data.message);
@@ -52,13 +60,7 @@ const ShopContextProvider = (props) => {
     } catch (error) {
       console.log('🚨 Error fetching catalog:', error);
       console.log('🚨 Error response:', error.response);
-      
-      // Cek apakah error.response ada
-      if (error.response && error.response.data && error.response.data.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error(`Error: ${error.message}`);
-      }
+
     }
   }
 
