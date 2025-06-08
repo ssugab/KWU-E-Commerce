@@ -19,10 +19,11 @@ const authService = {
     }
   },
 
-  signup: async (name, email, phone, password) => {
+  signup: async (name, npm, email, phone, password) => {
     try {
       const response = await axios.post(API_ENDPOINTS.USER.SIGNUP, {
         name,
+        npm,
         email,
         phone,
         password
@@ -48,17 +49,7 @@ const authService = {
 
   isAuthenticated: () => {
     return !!localStorage.getItem('token');
-  },
-
-  getProfile: async (userId) => {
-    try {
-      const respone = await axios.get(API_ENDPOINTS.USER.PROFILE, { 
-        
-      })
-    } catch (error) {
-      
-    }
-  },
+  }
 };
 
 export default authService; 

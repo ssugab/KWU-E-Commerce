@@ -9,6 +9,7 @@ import ospekkit from './img/ospek_kit.png';
 import menu_icon from './icons/menu.png';
 import imagePromo from './img/Tote-Bag-Mockup-1-1536x1152.jpg';
 import product1 from './img/surreal-tshirt-mockup.jpg'
+import qrCode from './img/qrcode.png'
 
 export const assets = {
   kwulogo,
@@ -21,6 +22,7 @@ export const assets = {
   imagePromo,
   product1,
   ospekkit,
+  qrCode,
 
 }
 

@@ -5,7 +5,7 @@ import { Outlet } from "react-router-dom"; // Agar halaman dinamis muncul di dal
 
 const MainLayout = () => {
   return (
-    <div className="App">
+    <div className="main-content">
       <Navbar />
       <Outlet /> {/* Semua halaman yang memakai MainLayout akan muncul di sini */}
       <Footer />

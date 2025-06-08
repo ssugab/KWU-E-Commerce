@@ -3,16 +3,9 @@ import { loginUser, signUpUser, adminLogin, getUserProfile } from '../controller
 
 const userRouter = express.Router();
 
-// Register route
 userRouter.post('/signup', signUpUser);
-
-// Login route
 userRouter.post('/login', loginUser);
-
-// Profile route
 userRouter.get('/profile', getUserProfile);
-
-// Admin Login route
-userRouter.post('/admin-login', adminLogin);
+userRouter.post('/admin', adminLogin);
 
 export default userRouter; 

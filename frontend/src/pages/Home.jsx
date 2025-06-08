@@ -5,17 +5,15 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { Navigation, Pagination } from 'swiper/modules';
 
-import { Link, NavLink } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { assets } from '../assets/assets';
-import ProductGrid from '../components/Products/ProductLists';
 import LatestProducts from '../components/Products/LatestProducts';
-import ProductGrid3d from '../components/ProductGrid3d';
 import Button from "../components/Button";
 import { FaInstagram, FaTiktok, FaYoutube, FaEnvelope } from 'react-icons/fa';
 
 
 const Home = () => {
-  // Data produk
+  // Products Ospek Kit
   const products = [
     { img: assets.ospekkit, name: "Ospek Kit 2025", link: "/produk/ospekkit" },
     { img: assets.product1, name: "Merchandise Ospek 2025", link: "/produk/merchandise" },
@@ -54,9 +52,9 @@ const Home = () => {
               </Swiper>
 
               {/* Tombol Navigasi Custom (Ditempatkan di dalam slider) */}
-              <div className="absolute top-1/2 transform left-0 right-0 -translate-y-1/2 w-full flex justify-between z-10">
-                <button className="custom-prev border-2 border-black -translate-x-1/2 ml-[-20px] hover:scale-110 hover:-translate-x-1/3 transition-all duration-300">❮</button>
-                <button className="custom-next border-2 border-black translate-x-1/2 mr-[-20px] hover:scale-110 hover:translate-x-1/3 transition-all duration-300">❯</button>
+              <div className="absolute top-1/2 transform left-2 right-2 -translate-y-1/2 w-auto flex justify-between z-10 pointer-events-none">
+                <button className="custom-prev border-2 border-black hover:scale-110 transition-all duration-300 pointer-events-auto">❮</button>
+                <button className="custom-next border-2 border-black hover:scale-110 transition-all duration-300 pointer-events-auto">❯</button>
               </div>
             </div>
           </div>    
@@ -132,10 +130,15 @@ const Home = () => {
         </section>
 
         {/* How To Order section */}
-        <section className='flex flex-col items-center bg-accent p-10'>
-          <h2 className='text-4xl font-bricolage text-center'>HOW TO ORDER</h2>
-          <div className='flex flex-col items-center'>
-            <h3 className='text-2xl font-display-bold text-center'>1. Pilih Produk</h3>
+        <section className='flex flex-col items-start bg-accent p-10'>
+          <h2 className='text-4xl font-bricolage text-start pb-5'>HOW TO ORDER</h2>
+          <div className='flex flex-col items-start border-3 p-5 shadow-matteblack'>
+            <h3 className='text-xl font-display-bold text-center'>1. Login</h3>
+            <h3 className='text-xl font-display-bold text-center'>2. Choose Product & Quantity</h3>
+            <h3 className='text-xl font-display-bold text-center'>3. Add to Cart</h3>
+            <h3 className='text-xl font-display-bold text-center'>4. Checkout</h3>
+            <h3 className='text-xl font-display-bold text-center'>5. Payment</h3>
+            <h3 className='text-xl font-display-bold text-center'>6. Wait for Confirmation</h3>
           </div>
         </section>
 
@@ -162,11 +165,11 @@ const Home = () => {
           </div>
           
           {/* Social Media Section */}
-          <div className="flex justify-start gap-4 p-5 min-w-[200px] font-display">
-            <a href="#" aria-label="Instagram" className='flex items-center gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1  transition-all'><FaInstagram />Instagram KWU</a>
-            <a href="#" aria-label="TikTok" className='flex items-center gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1  transition-all '><FaTiktok />TikTok KWU</a>
-            <a href="#" aria-label="YouTube" className='flex items-center gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1  transition-all   '><FaYoutube />Youtube KWU</a>
-            <a href="#" aria-label="Email" className='flex items-center gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1  transition-all '><FaEnvelope />Email KWU</a> 
+          <div className="grid grid-cols-2 md:grid-cols-4 justify-start gap-2 md:gap-4 p-2 md:p-5 w-full max-w-4xl font-display">
+            <a href="#" aria-label="Instagram" className='flex items-center gap-1 md:gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-all text-xs md:text-sm'><FaInstagram className="flex-shrink-0" /><span className="truncate">Instagram KWU</span></a>
+            <a href="#" aria-label="TikTok" className='flex items-center gap-1 md:gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-all text-xs md:text-sm'><FaTiktok className="flex-shrink-0" /><span className="truncate">TikTok KWU</span></a>
+            <a href="#" aria-label="YouTube" className='flex items-center gap-1 md:gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-all text-xs md:text-sm'><FaYoutube className="flex-shrink-0" /><span className="truncate">Youtube KWU</span></a>
+            <a href="#" aria-label="Email" className='flex items-center gap-1 md:gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-all text-xs md:text-sm'><FaEnvelope className="flex-shrink-0" /><span className="truncate">Email KWU</span></a> 
           </div>
         </section>
 

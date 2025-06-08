@@ -1,14 +1,11 @@
 import React, { useContext, useState, useEffect } from 'react'
-import ProductLists from '../components/Products/ProductLists'
-import ProductGrid3d from '../components/ProductGrid3d'
 import { ShopContext } from '../context/ShopContext'
 import { FaChevronDown } from 'react-icons/fa'
-import Button from '../components/Button'
 import ProductCard from '../components/Products/ProductCard'
 
 const Catalog = () => {
 
-  const { catalog } = useContext(ShopContext);
+  const { products } = useContext(ShopContext);
   const [ showCategory, setShowCategory] = useState(false);
   const [ showPrice, setShowPrice] = useState(false);
   const [ filteredProducts, setFilteredProducts] = useState([])
@@ -36,7 +33,7 @@ const Catalog = () => {
 
   const applyFilter = () => {
 
-    let productsCopy = catalog.slice();
+    let productsCopy = products.slice();
 
     if(category.length > 0) {
       productsCopy = productsCopy.filter(product => category.includes(product.category))
@@ -88,10 +85,10 @@ const Catalog = () => {
   }
 
   useEffect(() => {
-    if (catalog && Array.isArray(catalog)) {
-      setFilteredProducts(catalog)
+    if (products && Array.isArray(products)) {
+      setFilteredProducts(products)
     }
-  },[catalog])
+  },[products])
 
   useEffect(() => {
     applyFilter();
@@ -111,7 +108,7 @@ const Catalog = () => {
       <div className='flex flex-col md:flex-row gap-x-6 p-6 pl-10'>
 
         {/* Filter Section */}
-        <div className="flex flex-row md:flex-col h-full md:flex-col gap-2 items-start">
+        <div className="flex flex-row md:flex-col h-full gap-2 items-start">
           <h2 className='font-atemica text-xl mt-2'>Filters</h2>
           {/* Category Filter Section */}
           <div className="w-full md:w-auto flex flex-col">
@@ -136,8 +133,8 @@ const Catalog = () => {
                   <span>Accessories</span>
                 </label>
                 <label className='flex items-center gap-2 cursor-pointer hover:shadow-matteblack transition ease-in-out duration-300 p-2 rounded'>
-                  <input type="checkbox" className="form-checkbox" value={'Books'} onChange={handleCategory}/>
-                  <span>Books</span>
+                  <input type="checkbox" className="form-checkbox" value={'Outer'} onChange={handleCategory}/>
+                  <span>Outer</span>
                 </label>
                 {/* <Button text="Apply" to="/catalog" className="w-full text-center font-display-bold mt-10" onClick={applyFilter} /> */}
               </div>

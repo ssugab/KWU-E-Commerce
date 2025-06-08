@@ -11,10 +11,6 @@ const userSchema = new mongoose.Schema({
     required: [true, 'NPM is required'],
     unique: true
   },
-  major: {
-    type: String,
-    required: [true, 'Major is required']
-  },
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -33,6 +29,10 @@ const userSchema = new mongoose.Schema({
       quantity:{
         type: Number,
       },
+      product:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product'
+      }
     },
   ],
   role: {

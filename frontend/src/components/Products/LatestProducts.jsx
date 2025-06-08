@@ -3,17 +3,17 @@ import { ShopContext } from '../../context/ShopContext'
 import ProductCard from './ProductCard';
 
 const LatestProducts = () => {
-  const { catalog } = useContext(ShopContext);
+  const { products } = useContext(ShopContext);
   const [latestProducts, setLatestProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Algoritma untuk mendapatkan produk terbaru
-    if (catalog && catalog.length > 0) {
-      // console.log('🔍 LatestProducts - From Catalog data:', catalog);
+    if (products && products.length > 0) {
+      console.log('🔍 LatestProducts - Products data:', products);
       
       // Opsi 1: Ambil 4 produk pertama (asumsi data sudah diurutkan berdasarkan tanggal terbaru)
-      const latest = catalog.slice(0, 4);
+      const latest = products.slice(0, 4);
       
       //console.log('📦 Latest products:', latest);
       //console.log('🖼️ Images check:', latest.map(item => ({
@@ -31,7 +31,7 @@ const LatestProducts = () => {
       setLatestProducts(latest);
       setLoading(false);
     }
-  }, [catalog]);
+  }, [products]);
 
   if (loading) {
     return (

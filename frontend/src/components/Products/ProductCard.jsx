@@ -6,8 +6,8 @@ const ProductCard = ({ id, name, price, image, description }) => {
   // const backendUrl = import.meta.env.VITE_BACKEND_URL;
   
   // Debug logging untuk gambar
-  console.log('🖼️ ProductCard - Image URL:', image);
-  console.log('📋 ProductCard - Product data:', { id, name, price, image, description });
+  // console.log('🖼️ ProductCard - Image URL:', image);
+  // console.log('📋 ProductCard - Product data:', { id, name, price, image, description });
   
   // Fallback image dengan data URL untuk menghindari network error
   const defaultPlaceholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZTBlMGUwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
@@ -32,7 +32,7 @@ const ProductCard = ({ id, name, price, image, description }) => {
             }
           }}
           onLoad={() => {
-            console.log('✅ Image loaded successfully:', displayImage);
+            // console.log('✅ Image loaded successfully:', displayImage);
           }}
         />
       </div>

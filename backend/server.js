@@ -7,6 +7,7 @@ import connnectCloudinary from './config/cloudinary.js';
 // import productRoutes from './routes/productRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import productRoutes from './routes/productRoutes.js';
+import cartRouter from './routes/cartRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,7 @@ app.use(express.json());
 // Routes
 app.use('/api/catalog', productRoutes);
 app.use('/api/user', userRouter);
+app.use('/api/cart', cartRouter);
 
 // API Endpoints
 app.get('/', (req, res) => {
@@ -32,7 +34,8 @@ app.get('/', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Terjadi kesalahan server' });
+  console.log(err.message)
+  res.status(500).json({ message: 'Server Error' });
 });
 
 // Server

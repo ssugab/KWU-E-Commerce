@@ -14,7 +14,7 @@ const NotFound = () => {
       <Button 
         text="Kembali ke Beranda" 
         to="/"
-        className="mt-4"
+        className="mt-4 "
       />
     </div>
   )

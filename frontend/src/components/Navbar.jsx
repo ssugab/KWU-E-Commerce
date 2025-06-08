@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { assets } from '../assets/assets';
-import authService from '../services/authService';
+import { ShopContext } from '../context/ShopContext';
+import { useAuth } from '../context/AuthContext';
+
 const Navbar = () => {
 
+  const { getCartCount } = useContext(ShopContext);
+  const { isAuthenticated, logout } = useAuth();
   const [visible, setVisible] = useState(false);
-  const [currentState, setCurrentState] = useState();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+  };
 
   useEffect(() => { // untuk menutup sidebar menu saat ukuran layar lebih besar dari md screen
     const handleResize = () => {
-      if (window.innerWidth >= 768) { // md breakpoint di Tailwind
+      if (window.innerWidth >= 768) { // md breakpoint in Tailwind
         setVisible(false);
       }
     };
@@ -24,12 +30,11 @@ const Navbar = () => {
   }, []);
 
 
-
   return (
-    <div className='flex items-center justify-between py-5 border-b-3 bg-offwhite text-matteblack sticky top-0 z-50'>
+    <div className='fixed top-0 left-0 right-0 flex items-center justify-between py-5 px-5 md:px-0 border-b-3 bg-offwhite text-matteblack z-50 w-full'>
       {/* Left Navigation */}
-      <div className='flex-1 md:flex hidden justify-start'>
-        <ul className="flex gap-10 pl-10 font-atemica whitespace-nowrap">
+      <div className='flex-1 md:flex hidden justify-start overflow-hidden'>
+        <ul className="flex gap-4 lg:gap-10 pl-4 lg:pl-10 font-atemica whitespace-nowrap overflow-hidden">
           {[
             { path: '/', label: 'Home' },
             { path: '/catalog', label: 'Catalog' },
@@ -51,18 +56,6 @@ const Navbar = () => {
         </ul>
       </div>
 
-        {/*  BG accent on active menu navbar
-        <NavLink
-          to={item.path}
-          className={({ isActive }) => 
-                    `relative pb-1 text-sm hover:text-accent transition-colors duration-200 ${
-                      isActive ? 'bg-accent after:scale-x-100 p-4 rounded-lg' : 'after:scale-x-0'
-                    } after:absolute after:w-full after:bg-accent after:transition-all after:duration-300  `
-                  }>
-                {item.label}
-                </NavLink> 
-        */}
-
       {/* Logo */}
       <div className='flex-1 justify-center'>
         <NavLink to='/'>
@@ -82,22 +75,22 @@ const Navbar = () => {
               after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-accent after:transition-all after:duration-300 `
               }>
               <img src={assets.shopping_bag_icon} className='w-6 pb-0.5 hover:scale-110 transition-all duration-300' alt="" />
-              <span className='absolute -right-3 -top-2 w-4 h-4 rounded-full bg-accent text-white text-xs flex items-center justify-center'>
-                0
+              <span className='absolute -right-3 -top-2 w-4 h-4 rounded-full bg-accent text-offwhite text-xs flex items-center justify-center'>
+                {getCartCount()}
               </span>
             </NavLink>
           </li>
           
             {/* Icon Profile After Login --------------- dan dropdown menu profil */}
             <div className='group relative'>
-              {currentState === 'Login' ? (
+              {isAuthenticated ? (
                 <div>
                   <img className='w-5 cursor-pointer hover:scale-110 transition-all duration-300' src={assets.profile} alt="profile" />
                   <div className='group-hover:block hidden absolute dropdown-menu right-0 pt-4'>
                     <div className='flex flex-col gap-2 w-36 py-3 px-5 font-atemica bg-offwhite text-matteblack border-2 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded transition ease-in-out duration-300'> 
                       <NavLink to='/profile' className='cursor-pointer hover:text-accent'>My Profile</NavLink>
                       <NavLink to='/orders' className='cursor-pointer hover:text-accent'>Orders</NavLink>
-                      <NavLink to='/logout' className='cursor-pointer hover:text-accent'>Logout</NavLink>
+                      <button onClick={handleLogout} className='cursor-pointer hover:text-accent text-left'>Logout</button>
                     </div>
                   </div>
                 </div>
@@ -113,21 +106,58 @@ const Navbar = () => {
                 </NavLink>
               )}
             </div>
+
         </ul>
-          {/* Menu Icon small screen*/}
-          <img onClick={()=>setVisible(true)} src={assets.menu_icon} className='w-7 cursor-pointer mr-4.5 sm:block md:hidden' alt="" />
+        {/* Menu Icon & Cart on small screen */}
+        <div className='flex items-center gap-7'>
+            <NavLink
+            to='/cart'
+            onClick={()=> setVisible(false)}
+            className={`relative text-sm sm:block md:hidden hover:text-accent`}
+            >
+                  <img src={assets.shopping_bag_icon} className='w-6 hover:scale-110 transition-all duration-300' alt="" />
+                  <span className='absolute -right-2 -top-1 w-4 h-4 rounded-full bg-accent text-offwhite text-xs flex items-center justify-center'>
+                    {getCartCount()}
+                  </span>
+            </NavLink>
+            <img onClick={()=>setVisible(true)} src={assets.menu_icon} className='w-7 mr-4.5 cursor-pointer sm:block md:hidden' alt="menu icon" />
+        </div>    
       </div>
 
       {/* Sidebar Menu for Small screen*/}
-        {/* Background tambahan untuk transisi */}
-      <div className={`absolute top-0 right-0 bottom-0 h-screen w-full bg-accent transition-opacity duration-700 pointer-events-none ${visible ? 'opacity-100' : 'opacity-0'}`}>
-      </div>
+        {/* Background for transition */}
+        <div className={`absolute top-0 right-0 bottom-0 h-screen w-full bg-accent transition-opacity duration-700 pointer-events-none ${visible ? 'opacity-100' : 'opacity-0'}`}>
+        </div>
 
       <div className={`absolute top-0 right-0 bottom-0 h-screen overflow-hidden bg-offwhite transition-all duration-700 ease-in-out z-50 ${visible ? 'w-full' : 'w-0'}`}>
           <div className='flex flex-col text-matteblack'>
-            <div className='flex items-center gap-4 p-4 justify-between'>
-              <img onClick={()=> setVisible(false)} src={assets.return_icon} className='h-4.5 cursor-pointer' alt="" />
-              <NavLink to='/profile'><img onClick={()=> setVisible(false)} src={assets.profile} className='w-5 cursor-pointer hover:scale-110 transition-all duration-300' alt="profile" /></NavLink>
+            <div className='flex items-center justify-between p-6 px-8'>
+              {/* Return Button - Left Side */}
+              <img onClick={()=> setVisible(false)} src={assets.return_icon} className='h-4.5 cursor-pointer' alt="return icon" />
+              
+              {/* Cart & Profile - Right Side */}
+              <div className='flex items-center gap-7'>
+                <NavLink
+                  to='/cart'
+                  onClick={()=> setVisible(false)}
+                  className={`relative text-sm hover:text-accent`}
+                >
+                  <img src={assets.shopping_bag_icon} className='w-6 hover:scale-110 transition-all duration-300' alt="" />
+                  <span className='absolute -right-2 -top-1 w-4 h-4 rounded-full bg-accent text-offwhite text-xs flex items-center justify-center'>
+                    {getCartCount()}
+                  </span>
+                </NavLink>
+                {isAuthenticated ? (
+                  <NavLink to='/profile' >
+                    <img onClick={()=> setVisible(false)} src={assets.profile} className='w-5 cursor-pointer hover:scale-110 transition-all duration-300' alt="profile" />
+                  </NavLink>
+                ) : (
+                  <NavLink to='/login' >
+                    <img onClick={()=> setVisible(false)} src={assets.profile} className='w-5 cursor-pointer hover:scale-110 transition-all duration-300' alt="profile" />
+                  </NavLink>
+                )}
+                
+              </div>
             </div>
             {/* <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border-b-3' to='/'>Home</NavLink>
             <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6' to='/catalog'>Catalog</NavLink>

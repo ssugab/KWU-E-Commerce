@@ -1,7 +1,7 @@
 import React from 'react';
-import { assets } from '../assets/assets';
+import { assets } from '../../assets/assets';
 import { NavLink } from 'react-router-dom';
-import { CardContainer, CardBody, CardItem } from './UI/3d-card';
+import { CardContainer, CardBody, CardItem } from './3d-card';
 
 const ProductGrid = () => {
   const products = [

@@ -12,7 +12,6 @@ const SignUpPage = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [npm, setNpm] = useState('');
-  const [major, setMajor] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -26,6 +25,11 @@ const SignUpPage = () => {
   const validatePhone = (phone) => {
     const re = /^[0-9]{10,13}$/;
     return re.test(phone);
+  };
+
+  const validateNpm = (npm) => {
+    const re = /^[0-9]{10}$/;
+    return re.test(npm);
   };
 
   const handleSubmit = (e) => {
@@ -43,6 +47,9 @@ const SignUpPage = () => {
       setError("Format email tidak valid");
       toast.error("Format email tidak valid");
       return;
+    }
+    if (!validateNpm(npm)) {
+      throw new Error("Format NPM tidak valid");
     }
 
     if (phone && !validatePhone(phone)) {
@@ -111,7 +118,7 @@ const SignUpPage = () => {
               placeholder='ex: 2208xxx' 
             />
           </div>
-          <div className="w-full">
+          {/* <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Major</label>
             <input 
               type="text" 
@@ -120,7 +127,7 @@ const SignUpPage = () => {
               className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
               placeholder='ex: Sistem Informasi' 
             />
-          </div>
+          </div> */}
           <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Email</label>
             <input 

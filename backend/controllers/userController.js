@@ -44,24 +44,40 @@ const loginUser = async (req, res) => {
 // Sign Up User Route
 const signUpUser = async (req, res) => {
     try {
-        const {name, email, phone, password} = req.body;  
+        const {name, npm, email, phone, password, role} = req.body;  
         console.log('Signup attempt for email:', email);
         console.log('Input password:', password);
 
-        // Check if user already exists
-        const existingUser = await userModel.findOne({email});
-        if(existingUser){
-          console.log('User already exists:', email);
-          return res.json({success:false, message:"User already exists"})
+        // Check if user already exists by email
+        const existingUserByEmail = await userModel.findOne({email});
+        if(existingUserByEmail){
+          console.log('User already exists with email:', email);
+          return res.json({success:false, message:"User already exists with this email"})
+        }
+
+        // Check if user already exists by npm
+        const existingUserByNpm = await userModel.findOne({npm});
+        if(existingUserByNpm){
+          console.log('User already exists with NPM:', npm);
+          return res.json({success:false, message:"User already exists with this NPM"})
         }
 
         // Validate input
+        if(!name || name.trim().length < 2){
+          return res.json({success:false, message:"Name must be at least 2 characters long"})
+        }
+        
+        if(!npm || npm.length < 8){
+          return res.json({success:false, message:"NPM must be at least 8 characters long"})
+        }
+        
         if(!validator.isEmail(email)){
           return res.json({success:false, message:"Enter a valid email"})
         }
         if(password.length < 8){
           return res.json({success:false, message:"Password must be at least 8 characters long"})
         }
+        
         if(!validator.isMobilePhone(phone)){
           return res.json({success:false, message:"Enter a valid phone number"})
         }
@@ -72,12 +88,14 @@ const signUpUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
         console.log('Hashed password:', hashedPassword);
        
-        // Create new user
+        // Create new user with all fields
         const newUser = new userModel({
-          name,
-          email,
+          name: name.trim(),
+          npm,
+          email: email.toLowerCase(),
           phone,
-          password: hashedPassword
+          password: hashedPassword,
+          role: role || 'user' // Default role is 'user' if not provided
         }) 
         
         // Save user to database
@@ -119,9 +137,16 @@ const getUserProfile = async (req, res) => {
 // Admin Login Route
 const adminLogin = async (req, res) => {
   try {
-    
+    const {email, password} = req.body;
+    if(email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD){
+      const token = jwt.sign(email + password, process.env.JWT_SECRET)
+      res.json({success: true, message: "Admin Login Success", token})
+    }
+    else {
+      res.json({success: false, message: "Invalid Admin Credentials"})
+    }
   } catch (error) {
-    
+    res.json({success: false, message: error.message})
   }
 }
 

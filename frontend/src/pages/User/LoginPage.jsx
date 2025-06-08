@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Button from '../../components/Button';
 import toast, { Toaster } from 'react-hot-toast';
-import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { login, signup } = useAuth();
   const [currentState, setCurrentState] = useState('Login'); // Login/Signup
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [npm, setNpm] = useState('');
   const [phone, setPhone] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (email) => {
@@ -20,42 +21,29 @@ const LoginPage = () => {
     return re.test(email);
   };
 
-  const validatePhone = (phone) => {
-    const re = /^[0-9]{10,13}$/;
-    return re.test(phone);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
     setIsLoading(true);
 
     try {
-      if (!email || !password || !phone || (currentState === "Sign Up" && !name)) {
+      if (!email || !password || (currentState === "Sign Up" && (!name || !npm))) {
         throw new Error("Harap isi semua bidang yang wajib diisi!");
       }
 
       if (!validateEmail(email)) {
         throw new Error("Format email tidak valid");
       }
-
-      if (phone && !validatePhone(phone)) {
-        throw new Error("Format nomor telepon tidak valid (10-13 digit)");
-      }
-
       if (password.length < 6) {
         throw new Error("Password minimal 6 karakter");
       }
 
       if (currentState === 'Login') {
-        const response = await authService.login(email, password);
+        await login(email, password);
         toast.success('Login berhasil!');
-        setSuccess('Login berhasil!');
       } else {
-        const response = await authService.signup(name, email, phone, password);
+        await signup(name, npm, email, phone, password);
         toast.success('Registrasi berhasil!');
-        setSuccess('Registrasi berhasil!');
       }
 
       // Redirect setelah 2 detik
@@ -64,7 +52,7 @@ const LoginPage = () => {
       }, 2000);
 
     } catch (error) {
-      setError(error.message);
+      console.log(error);
       toast.error(error.message);
     } finally {
       setIsLoading(false);
@@ -104,6 +92,19 @@ const LoginPage = () => {
               />
             </div>
           )}
+          {currentState === 'Login' ? null : (
+            <div className="w-full">
+              <label className="block text-sm font-bold mb-2 text-gray-700">NPM</label>
+              <input 
+                type="text" 
+                value={npm} 
+                onChange={(e) => setNpm(e.target.value)} 
+                className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
+                placeholder='Insert Your NPM' 
+                disabled={isLoading}
+              />
+            </div>
+          )}
           <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Email</label>
             <input 
@@ -115,17 +116,17 @@ const LoginPage = () => {
               disabled={isLoading}
             />
           </div>
-          <div className="w-full">
-            <label className="block text-sm font-bold mb-2 text-gray-700">Phone Number</label>
-            <input 
-              type="text" 
-              value={phone} 
-              onChange={(e) => setPhone(e.target.value)} 
-              className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-              placeholder='08xxxxxxxxxx' 
-              disabled={isLoading}
+          {/* <div className="w-full">
+            <label className="block text-sm font-bold mb-2 text-gray-700">NPM</label>
+              <input 
+                type="text" 
+                value={phone} 
+                onChange={(e) => setNpm(e.target.value)} 
+                className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
+                placeholder='Insert Your NPM' 
+                disabled={isLoading}
             />
-          </div>
+          </div> */}
           <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Password</label>
             <input 
