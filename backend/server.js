@@ -4,10 +4,11 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/mongodb.js';
 import connnectCloudinary from './config/cloudinary.js';
-// import productRoutes from './routes/productRoutes.js';
+
 import userRouter from './routes/userRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import cartRouter from './routes/cartRoutes.js';
+import orderRouter from './routes/orderRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -25,6 +26,7 @@ app.use(express.json());
 app.use('/api/catalog', productRoutes);
 app.use('/api/user', userRouter);
 app.use('/api/cart', cartRouter);
+app.use('/api/order', orderRouter);
 
 // API Endpoints
 app.get('/', (req, res) => {

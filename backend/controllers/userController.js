@@ -11,24 +11,20 @@ const createToken = (id) => {
 const loginUser = async (req, res) => {
   try {
     const {email, password} = req.body;
-    console.log('Login attempt for email:', email);
-    console.log('Input password:', password);
 
     // Check if user exists
     const user = await userModel.findOne({email});
     if(!user) {
-      console.log('User not found:', email);
+      console.error('User not found:', email);
       return res.json({success:false, message:"User does not exist"})
     }
-    
-    console.log('User found, stored hashed password:', user.password);
-    console.log('Comparing passwords...');
+
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    console.log('Password comparison result:', isPasswordCorrect);
     
     if(isPasswordCorrect) {
       const token = createToken(user._id);
       console.log('Login successful, token generated');
+      console.log('User role:', user.role);
       res.json({success:true, message:"Login successful", token})
     }
     else {
@@ -36,7 +32,7 @@ const loginUser = async (req, res) => {
       return res.json({success:false, message:"Password is incorrect"})
     }
   } catch (error) {
-    console.log('Login error:', error);
+    console.error('Login error:', error);
     res.json({success:false, message:error.message})
   }
 }
@@ -44,9 +40,7 @@ const loginUser = async (req, res) => {
 // Sign Up User Route
 const signUpUser = async (req, res) => {
     try {
-        const {name, npm, email, phone, password, role} = req.body;  
-        console.log('Signup attempt for email:', email);
-        console.log('Input password:', password);
+        const {name, npm, email, phone, password, role} = req.body;
 
         // Check if user already exists by email
         const existingUserByEmail = await userModel.findOne({email});
@@ -84,9 +78,7 @@ const signUpUser = async (req, res) => {
 
         // Hash password
         const salt = await bcrypt.genSalt(10);
-        console.log('Generated salt:', salt);
         const hashedPassword = await bcrypt.hash(password, salt);
-        console.log('Hashed password:', hashedPassword);
        
         // Create new user with all fields
         const newUser = new userModel({
@@ -101,7 +93,6 @@ const signUpUser = async (req, res) => {
         // Save user to database
         const user = await newUser.save(); 
         console.log('User saved successfully:', email);
-        console.log('Stored hashed password:', user.password);
 
         const token = createToken(user._id);
         res.json({success:true, message:"User created successfully", token})
@@ -115,7 +106,8 @@ const signUpUser = async (req, res) => {
 // Logout User Route
 const logOutUser = async (req, res) => {
   try {
-    
+    const {userId} = req.user;
+
   } catch (error) {
     
   }
@@ -125,12 +117,24 @@ const logOutUser = async (req, res) => {
 const getUserProfile = async (req, res) => { 
   try {
     const {userId} = req.user;
-    const user = await userModel.findById(userId);
-    res.json({success:true, user})
-
+    const user = await userModel.findById(userId).select('-password');
     
+    if (!user) {
+      return res.json({success: false, message: "User not found"});
+    }
+    
+    res.json({
+      success: true, 
+      name: user.name, 
+      npm: user.npm, 
+      email: user.email, 
+      phone: user.phone, 
+      role: user.role
+    });
+
   } catch (error) {
-    res.json({success:false, error})    
+    console.error('Get profile error:', error);
+    res.json({success: false, message: error.message});    
   }
 }
 

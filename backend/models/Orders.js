@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
   orderNumber: {
@@ -158,7 +158,6 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Index untuk performa query
-orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ 'customer.email': 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ orderDate: -1 });
@@ -249,4 +248,6 @@ orderSchema.pre('save', async function(next) {
 orderSchema.set('toJSON', { virtuals: true });
 orderSchema.set('toObject', { virtuals: true });
 
-module.exports = mongoose.model('Order', orderSchema);
+const orderModel = mongoose.models.Order || mongoose.model('Order', orderSchema);
+
+export default orderModel;

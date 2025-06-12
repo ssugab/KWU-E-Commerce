@@ -15,7 +15,6 @@ const router = express.Router();
 // Public routes
 router.get('/', getAllProducts);
 router.get('/:id', getProduct);
-router.get('/:category', getProductByCategory);
 
 // Admin routes
 router.post('/create', upload.fields([

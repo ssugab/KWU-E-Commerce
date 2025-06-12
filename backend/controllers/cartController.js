@@ -18,6 +18,7 @@ const addToCart = async (req, res) => {
       // Jika cart belum ada, buat cart baru
       cart = new cartModel({
         userId,
+        name: user.name,
         products: [{
           productId,
           size: size || 'default',

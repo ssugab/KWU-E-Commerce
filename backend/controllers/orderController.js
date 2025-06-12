@@ -1,5 +1,5 @@
-const Order = require('../src/models/Order');
-const Product = require('../src/models/Product');
+import Order from '../models/Orders.js';
+import Product from '../models/Product.js';
 
 // Create new order
 const createOrder = async (req, res) => {
@@ -457,7 +457,7 @@ const deleteOrder = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   createOrder,
   getOrder,
   getOrderByNumber,
