@@ -7,6 +7,7 @@ import Cart from './pages/Cart'
 import Catalog from './pages/Catalog'
 import Product from './pages/Product'
 import MainLayouts from './components/Layouts/MainLayouts'
+import AdminLayouts from './components/Layouts/AdminLayouts'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Contact from './pages/Contact'
@@ -17,10 +18,15 @@ import SignUp from './pages/User/SignUpPage'
 import Payment from './pages/Payment'
 import Orders from './pages/Orders'
 import Checkout from './pages/Checkout'
-import { AuthProvider } from './context/AuthContext'
+
+import AdminLogin from './pages/admin/AdminLogin'
+import AdminDashboard from './pages/admin/AdminDashboard'
+
+import { AuthProvider, useAuth } from './context/AuthContext'
 
 const App = () => {
   const location = useLocation();
+  const { user } = useAuth();
 
   // Effect to scroll to top of page when route changes
   useEffect(() => {
@@ -49,9 +55,18 @@ const App = () => {
             <Route path='/payment' element={<Payment />} />
           </Route>
 
-            <Route path='/login' element={<Login />} />
-            <Route path='/signup' element={<SignUp />} />
-            <Route path='*' element={<NotFound />} />       
+          <Route path='/login' element={<Login />} />
+          <Route path='/signup' element={<SignUp />} />
+          
+          {/* Admin Routes */}
+          <Route element={user?.role === 'Admin' ? <AdminLayouts /> : <MainLayouts />}></Route>
+          <Route element={<AdminLayouts />}>
+            <Route path='/admin/login' element={<AdminLogin />} />
+            <Route path='/admin/dashboard' element={<AdminDashboard />} />
+          </Route>
+          
+          <Route path='*' element={<NotFound />} />
+       
         </Routes>
       </div>
     </AuthProvider>

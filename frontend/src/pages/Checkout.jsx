@@ -1,24 +1,23 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext'
+import { useAuth } from '../context/AuthContext'
+import { useCheckout } from '../hooks/useCheckout'
+import CheckOutSummary from '../components/CheckOutSummary'
 import Button from '../components/Button'
-import CheckoutForm from '../components/CheckoutForm'
-import OrderSummary from '../components/OrderSummary'
-import { FaArrowLeft } from 'react-icons/fa'
-// import { useCheckout } from '../hooks/useCheckout'
+import { FaArrowLeft, FaUser, FaEnvelope, FaPhone } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 
 const Checkout = () => {
-  const { products, cart, getCartAmount, navigate } = useContext(ShopContext)
+  const { products, cart, getCartAmount, navigate, clearCart } = useContext(ShopContext)
+  const { user, isAuthenticated, loading } = useAuth()
   const [cartData, setCartData] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   
-  /* const {
+  const {
     createOrder,
-    validateOrderData,
-    calculateShipping,
     isLoading: checkoutLoading
-  } = useCheckout(); */
+  } = useCheckout();
 
   useEffect(() => {
     const tempData = [];
@@ -36,42 +35,47 @@ const Checkout = () => {
     setCartData(tempData);
   },[cart])
 
-  // Redirect jika cart kosong
-  /* useEffect(() => {
-    if (cartData.length === 0 ) {
-      toast.error('Keranjang Anda kosong. Silakan tambahkan produk terlebih dahulu.');
-      navigate('/catalog');
-    }
-  }, [cartData, checkoutLoading, navigate]);
+  // Tampilkan pesan jika cart kosong setelah loading selesai
+  const isCartEmpty = cartData.length === 0 && products.length > 0;
 
-  const handleFormSubmit = async (formData) => {
+  useEffect(() => {
+    // Tunggu sampai loading selesai sebelum redirect
+    if (!loading && !isAuthenticated) {
+      toast.error('Silakan login untuk melihat checkout');
+      navigate('/login');
+    }
+  }, [isAuthenticated, loading, navigate])
+
+  const handleCheckout = async () => {
+    if (!user) {
+      toast.error('Data user tidak ditemukan. Silakan login ulang.');
+      return;
+    }
+
     setIsProcessing(true);
     try {
       // Validasi data order
-      const orderData = {
-        customerInfo: formData,
-        items: cartData,
-        subtotal: getCartAmount(),
-        shipping: calculateShipping(getCartAmount()),
-        total: getCartAmount() + calculateShipping(getCartAmount()),
-        orderDate: new Date().toISOString(),
-        status: 'pending'
-      };
+      const subtotal = getCartAmount();
 
-      // Validasi order data
-      const validation = validateOrderData(orderData);
-      if (!validation.isValid) {
-        toast.error(validation.message);
+      if (subtotal <= 0) {
+        toast.error('Total pesanan tidak valid');
         return;
       }
 
-      // Buat order
-      const result = await createOrder(orderData);
+      // Gunakan data user yang sudah ada
+      const userData = {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        npm: user.npm
+      };
+
+      // Buat order menggunakan useCheckout hook
+      const result = await createOrder(userData, cartData, subtotal);
       
       if (result.success) {
         toast.success('Pesanan berhasil dibuat! Lanjut ke pembayaran...');
-        // Simpan order ID untuk payment
-        sessionStorage.setItem('currentOrderId', result.orderId);
+        clearCart();
         navigate('/payment');
       } else {
         toast.error(result.message || 'Gagal membuat pesanan');
@@ -84,21 +88,54 @@ const Checkout = () => {
     }
   };
 
-  if (checkoutLoading) {
+  // Loading state - cek auth loading dulu
+  if (loading || checkoutLoading) {
     return (
       <div className='min-h-screen flex items-center justify-center'>
         <div className='text-center'>
           <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4'></div>
-          <p className='text-gray-600'>Memuat halaman checkout...</p>
+          <p className='text-gray-600'>
+            {loading ? 'Memverifikasi login...' : 'Loading checkout page...'}
+          </p>
         </div>
       </div>
     );
   }
- */
+
+  // Tampilkan pesan jika cart kosong setelah loading selesai
+  if (isCartEmpty) {
+    return (
+      <div className='min-h-screen flex items-center justify-center bg-offwhite2'>
+        <div className='text-center max-w-md mx-auto p-8'>
+          <div className='mb-6'>
+            <div className='w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center'>
+              <span className='text-4xl'>🛒</span>
+            </div>
+            <h2 className='text-2xl font-bold text-gray-900 mb-2'>Keranjang Anda Kosong</h2>
+            <p className='text-gray-600 mb-6'>
+              Silakan tambahkan produk ke keranjang terlebih dahulu sebelum melakukan checkout.
+            </p>
+          </div>
+          <div className='space-y-3'>
+            <Button
+              text='Kembali ke Katalog'
+              onClick={() => navigate('/catalog')}
+              className='w-full bg-accent hover:bg-accent/90 text-matteblack border-accent'
+            />
+            <Button
+              text='Lihat Keranjang'
+              onClick={() => navigate('/cart')}
+              className='w-full bg-white hover:bg-gray-50 text-gray-700 border-gray-300'
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className='min-h-screen bg-offwhite2'>
-      <div className='container mx-auto px-4 py-8'>
+      <div className='container mx-auto px-4 py-8 mb-50'>
         <div className='max-w-7xl mx-auto'>
           
           {/* Breadcrumb Navigation */}
@@ -114,38 +151,62 @@ const Checkout = () => {
           {/* Page Title */}
           <h1 className='font-atemica text-2xl md:text-3xl mb-8 text-gray-900'>Checkout</h1>
 
-          {/* Progress Indicator */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                  ✓
-                </div>
-                <span className="ml-2 text-sm text-green-600 font-medium">Cart</span>
-              </div>
-              <div className="w-8 h-1 bg-accent"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center text-sm font-medium">
-                  2
-                </div>
-                <span className="ml-2 text-sm text-gray-900 font-medium">Checkout</span>
-              </div>
-              <div className="w-8 h-1 bg-gray-300"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gray-300 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">
-                  3
-                </div>
-                <span className="ml-2 text-sm text-gray-500">Payment</span>
-              </div>
-            </div>
-          </div>
-
           {/* Main Content Grid */}
           <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
             
-            {/* Left Column - Forms & Info */}
+            {/* Left Column - Info */}
             <div className='lg:col-span-2 space-y-6'>
               
+              {/* Customer Information - Display Only */}
+              <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
+                <h2 className='font-atemica text-xl mb-6 text-gray-900 flex items-center gap-2'>
+                  <FaUser className="w-5 h-5" />
+                  <span>Informasi Pelanggan</span>
+                </h2>
+                
+                <div className='space-y-4'>
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
+                      <label className='block text-sm font-medium text-gray-600 mb-1'>
+                        Nama Lengkap
+                      </label>
+                      <p className='text-gray-900 font-medium'>{user?.name || '-'}</p>
+                    </div>
+                    
+                    <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
+                      <label className='block text-sm font-medium text-gray-600 mb-1'>
+                        NPM
+                      </label>
+                      <p className='text-gray-900 font-medium'>{user?.npm || '-'}</p>
+                    </div>
+                  </div>
+
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
+                      <label className='block text-sm font-medium text-gray-600 mb-1 flex items-center gap-2'>
+                        <FaEnvelope className="w-3 h-3" />
+                        Email
+                      </label>
+                      <p className='text-gray-900 font-medium'>{user?.email || '-'}</p>
+                    </div>
+                    
+                    <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
+                      <label className='block text-sm font-medium text-gray-600 mb-1 flex items-center gap-2'>
+                        <FaPhone className="w-3 h-3" />
+                        Nomor Telepon
+                      </label>
+                      <p className='text-gray-900 font-medium'>{user?.phone || '-'}</p>
+                    </div>
+                  </div>
+
+                  <div className='mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200'>
+                    <p className='text-sm text-blue-800'>
+                      💡 <strong>Info:</strong> Data di atas diambil dari profil akun Anda. Jika perlu mengubah, silakan update di halaman profil.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Pickup Address Section */}
               <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
                 <h2 className='font-atemica text-xl mb-4 text-gray-900 flex items-center gap-2'>
@@ -180,7 +241,7 @@ const Checkout = () => {
                   📦 <span>Review Order ({cartData.length} item{cartData.length > 1 ? 's' : ''})</span>
                 </h2>
                 
-                {cartData.length === 0 ? (
+                {isCartEmpty ? (
                   <div className='text-center py-8'>
                     <p className='text-gray-500 mb-2'>Cart is empty</p>
                     <Link to='/catalog' className='text-accent hover:underline text-sm'>
@@ -194,7 +255,7 @@ const Checkout = () => {
                       if (!productData) return null;
                       
                       return (
-                        <div key={index} className='flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100 hover:shadow-sm transition-shadow'>
+                        <div key={index} className='flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-matteblack hover:shadow-matteblack transition-shadow'>
                           {/* Product Image */}
                           <div className='flex-shrink-0'>
                             <img 
@@ -207,12 +268,14 @@ const Checkout = () => {
                           {/* Product Details */}
                           <div className='flex-1'>
                             <h3 className='font-semibold text-gray-900 mb-1'>{productData.name}</h3>
-                            {item.size && (
-                              <span className='inline-block px-2 py-1 bg-accent text-xs font-medium rounded text-matteblack mb-2'>
+                            { item.size && item.size !== 'default' ? (
+                              <span className='inline-block px-2 py-1 bg-offwhite3 text-xs font-medium text-matteblack mb-2'>
                                 Size: {item.size}
                               </span>
+                            ) : (
+                              <div className='h-8'></div>
                             )}
-                            <p className='text-sm text-gray-600'>Quantity: {item.quantity}</p>
+                            <p className='text-sm text-gray-600'>Quantity: <span className='text-matteblack'>{item.quantity}</span></p>
                           </div>
                           
                           {/* Price */}
@@ -230,18 +293,33 @@ const Checkout = () => {
                   </div>
                 )}
               </div>
-
-              {/* Customer Information Form 
-              <CheckoutForm onSubmit={handleFormSubmit} isProcessing={isProcessing} /> */}
             </div>
 
-            {/* Right Column - Order Summary */}
+            {/* Right Column - Order Summary & Checkout */}
             <div className='lg:col-span-1'>
-              <div className='sticky top-4'>
-                <OrderSummary 
+              <div className='sticky top-4 space-y-4'>
+                <CheckOutSummary 
                   cartData={cartData} 
                   isProcessing={isProcessing}
                 />
+                
+                {/* Checkout Button */}
+                <Button
+                  onClick={handleCheckout}
+                  text={isProcessing ? "⏳ Processing..." : "Confirm Order"}
+                  className={`w-full border-accent font-medium py-3 text-base transition-all duration-200 ${
+                    isProcessing 
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                      : 'bg-accent hover:bg-accent/90 text-matteblack hover:transform hover:scale-[1.02]'
+                  }`}
+                  disabled={isProcessing || isCartEmpty}
+                />
+                
+                {isProcessing && (
+                  <p className='text-center text-sm text-gray-600 mt-2'>
+                    Processing your order, please wait...
+                  </p>
+                )}
               </div>
             </div>
           </div>

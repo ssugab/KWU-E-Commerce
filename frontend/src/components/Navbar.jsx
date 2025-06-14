@@ -6,12 +6,22 @@ import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
 
-  const { getCartCount } = useContext(ShopContext);
-  const { isAuthenticated, logout } = useAuth();
+  const { getCartCount, navigate } = useContext(ShopContext);
+  const { isAuthenticated, login, logout } = useAuth();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'Admin';
   const [visible, setVisible] = useState(false);
 
   const handleLogout = () => {
     logout();
+    navigate('/');
+    window.location.reload();
+  };
+
+  const handleLogin = () => {
+    login();
+    navigate('/');
+    window.location.reload();
   };
 
   useEffect(() => { // untuk menutup sidebar menu saat ukuran layar lebih besar dari md screen
@@ -38,8 +48,7 @@ const Navbar = () => {
           {[
             { path: '/', label: 'Home' },
             { path: '/catalog', label: 'Catalog' },
-            { path: '/contact', label: 'Contact' },
-            { path: '/sale', label: 'Sale' }
+            { path: '/contact', label: 'Contact' }
           ].map((item) => (
             <li key={item.path}>
               <NavLink
@@ -65,8 +74,21 @@ const Navbar = () => {
 
       {/* Right Navigation */}
       <div className='flex-1 flex justify-end'>
+        
         <ul className="md:flex hidden gap-10 pr-10">
           <li>
+          {isAdmin && (
+            <NavLink 
+            to='/admin/dashboard' 
+            className='flex items-center gap-2 px-3 border-2 border-matteblack rounded-sm bg-offwhite hover:bg-accent hover:text-matteblack hover:shadow-matteblack transition-all duration-200 font-display text-sm'
+          >
+            <span className='font-atemica pt-1'>Admin Dashboard</span>
+          </NavLink>
+          )}
+          </li>
+
+          <li>
+            {isAuthenticated && (
             <NavLink
               to='/cart'
               className={({ isActive }) => 
@@ -79,9 +101,11 @@ const Navbar = () => {
                 {getCartCount()}
               </span>
             </NavLink>
+            
+            )}
           </li>
-          
-            {/* Icon Profile After Login --------------- dan dropdown menu profil */}
+
+            {/* Icon Profile After Login */}
             <div className='group relative'>
               {isAuthenticated ? (
                 <div>
@@ -110,6 +134,7 @@ const Navbar = () => {
         </ul>
         {/* Menu Icon & Cart on small screen */}
         <div className='flex items-center gap-7'>
+          {isAuthenticated ? (
             <NavLink
             to='/cart'
             onClick={()=> setVisible(false)}
@@ -120,11 +145,15 @@ const Navbar = () => {
                     {getCartCount()}
                   </span>
             </NavLink>
+          ) : (
+            <div></div>
+          )}
             <img onClick={()=>setVisible(true)} src={assets.menu_icon} className='w-7 mr-4.5 cursor-pointer sm:block md:hidden' alt="menu icon" />
         </div>    
       </div>
 
       {/* Sidebar Menu for Small screen*/}
+      
         {/* Background for transition */}
         <div className={`absolute top-0 right-0 bottom-0 h-screen w-full bg-accent transition-opacity duration-700 pointer-events-none ${visible ? 'opacity-100' : 'opacity-0'}`}>
         </div>
@@ -137,6 +166,7 @@ const Navbar = () => {
               
               {/* Cart & Profile - Right Side */}
               <div className='flex items-center gap-7'>
+                {isAuthenticated ? (
                 <NavLink
                   to='/cart'
                   onClick={()=> setVisible(false)}
@@ -147,27 +177,33 @@ const Navbar = () => {
                     {getCartCount()}
                   </span>
                 </NavLink>
+                ): (
+                  <div></div>
+                )}
                 {isAuthenticated ? (
                   <NavLink to='/profile' >
                     <img onClick={()=> setVisible(false)} src={assets.profile} className='w-5 cursor-pointer hover:scale-110 transition-all duration-300' alt="profile" />
                   </NavLink>
                 ) : (
-                  <NavLink to='/login' >
-                    <img onClick={()=> setVisible(false)} src={assets.profile} className='w-5 cursor-pointer hover:scale-110 transition-all duration-300' alt="profile" />
-                  </NavLink>
+                  <NavLink
+                  to='/login'
+                  className={({ isActive }) => 
+                    `relative text-sm hover:text-accent 
+                    ${isActive ? 'text-accent after:scale-x-100' : 'after:scale-x-0'} 
+                    after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2.5px] after:bg-accent after:transition-all after:duration-300 `
+                  }>
+                  LOGIN
+                </NavLink>
                 )}
                 
               </div>
             </div>
-            {/* <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border-b-3' to='/'>Home</NavLink>
-            <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6' to='/catalog'>Catalog</NavLink>
-            <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border-t-3' to='/about'>About</NavLink> */}
+
           <div className="flex flex-col gap-4 p-4 border-t-3">
             {[
               { path: '/', label: 'Home' },
               { path: '/catalog', label: 'Catalog' },
-              { path: '/contact', label: 'Contact' },
-              { path: '/sale', label: 'Sale' },
+              { path: '/contact', label: 'Contact' }
             ].map((item) => (
               <div key={item.path} className='w-full border-b-3 font-atemica hover:bg-accent transition-colors duration-300' onClick={()=>setVisible(false)}>
                 <NavLink

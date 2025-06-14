@@ -2,35 +2,317 @@ import React, { useContext, useState, useEffect } from 'react'
 import authService from '../../services/authService';
 import { ShopContext } from '../../context/ShopContext';
 import { useAuth } from '../../context/AuthContext';
-import { assets } from '../../assets/assets';
+import { Link } from 'react-router-dom';
+import Button from '../../components/Button';
+import { FaUser, FaEnvelope, FaPhone, FaIdCard, FaArrowLeft, FaEdit, FaLock, FaSignOutAlt } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
-  const { getUser } = useAuth();
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
+  const { navigate } = useContext(ShopContext);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    npm: '',
+    email: '',
+    phone: ''
+  });
 
   useEffect(() => {
-    getUser().then(setUser);
-  }, [getUser]);
-  
-  console.log(user);
-  
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        npm: user.npm || '',
+        email: user.email || '',
+        phone: user.phone || ''
+      });
+    }
+  }, [user]);
+
+  const handleEditToggle = () => {
+    setIsEditMode(!isEditMode);
+    if (!isEditMode && user) {
+      setFormData({
+        name: user.name || '',
+        npm: user.npm || '',
+        email: user.email || '',
+        phone: user.phone || ''
+      });
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSaveProfile = () => {
+    // TODO: Implement save profile functionality
+    toast.success('Profil berhasil diperbarui!');
+    setIsEditMode(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logout berhasil!');
+    navigate('/');
+  };
+
+  const handleChangePassword = () => {
+    // TODO: Implement change password functionality
+    toast.info('Fitur ubah password akan segera hadir!');
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat profil...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className='flex flex-col h-screen gap-5'>
-      <h1 className='text-2xl font-atemica justify-start p-10'>My Profile</h1>
-      <div className='flex flex-col w-1/2 md:mx-auto mx-5 justify-center bg-accent border-3 p-7 gap-5 rounded-lg hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-[4px] hover:-translate-y-[4px] transition-all duration-300'>
-        <div className=''>Name: {user?.name}</div>
-        <div className=''>Email: {user?.email}</div>
-        <div className=''>Phone Number</div>
+    <div className='min-h-screen bg-gray-50 pb-20'>
+      {/* Header & Breadcrumb */}
+      <div className='bg-offwhite2 border-b-3 mb-9'>
+        <div className='container mx-auto px-4 py-4'>
+          {/* Mobile Breadcrumb */}
+          <div className='flex items-center gap-2 mb-4 md:hidden'>
+            <Link to='/' className='flex items-center gap-2 text-accent hover:underline text-sm transition-colors'>
+              <FaArrowLeft className="w-3 h-3" />
+              <span>Home</span>
+            </Link>
+            <span className="text-gray-400">/</span>
+            <span className="text-gray-700 font-medium">Profile</span>
+          </div>
+
+          <h1 className='text-2xl md:text-3xl font-atemica text-matteblack mb-3 mt-5'>My Profile</h1>
+        </div>
       </div>
 
-      <div className='flex flex-col w-1/2 md:mx-auto mx-5 justify-center bg-accent border-3 p-7 gap-5 rounded-lg hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-[4px] hover:-translate-y-[4px] transition-all duration-300'>
-        <div className=''>Change Password</div>
+      <div className='container mx-auto px-4 max-w-4xl'>
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+          
+
+
+          {/* Profile Details */}
+          <div className='lg:col-span-2 space-y-6'>
+            
+            {/* Personal Information Card */}
+            <div className='bg-white border-3 border-matteblack rounded-lg p-6 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-[3px] hover:-translate-y-[3px] transition-all duration-300'>
+              <div className='flex items-center justify-between mb-6'>
+                <h3 className='font-bricolage text-xl font-bold'>Personal Information</h3>
+                {!isEditMode && (
+                  <button 
+                    onClick={handleEditToggle}
+                    className='text-accent hover:text-amber-600 p-2 border-2 hover:bg-matteblack transition-colors'
+                  >
+                    <FaEdit className='w-4 h-4' />
+                  </button>
+                )}
+              </div>
+
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                {/* Name Field */}
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    <FaUser className='inline w-4 h-4 mr-2' />
+                    Full Name
+                  </label>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-accent focus:outline-none transition-colors'
+                    />
+                  ) : (
+                    <p className='py-2 px-3 bg-gray-50 border-2 border-gray-200 rounded-lg'>{user.name}</p>
+                  )}
+                </div>
+
+                {/* NPM Field */}
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    <FaIdCard className='inline w-4 h-4 mr-2' />
+                    NPM
+                  </label>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      name="npm"
+                      value={formData.npm}
+                      onChange={handleInputChange}
+                      className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-accent focus:outline-none transition-colors'
+                    />
+                  ) : (
+                    <p className='py-2 px-3 bg-gray-50 border-2 border-gray-200 rounded-lg'>{user.npm}</p>
+                  )}
+                </div>
+
+                {/* Email Field */}
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    <FaEnvelope className='inline w-4 h-4 mr-2' />
+                    Email Address
+                  </label>
+                  {isEditMode ? (
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-accent focus:outline-none transition-colors'
+                    />
+                  ) : (
+                    <p className='py-2 px-3 bg-gray-50 border-2 border-gray-200 rounded-lg'>{user.email}</p>
+                  )}
+                </div>
+
+                {/* Phone Field */}
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    <FaPhone className='inline w-4 h-4 mr-2' />
+                    Phone Number
+                  </label>
+                  {isEditMode ? (
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-accent focus:outline-none transition-colors'
+                    />
+                  ) : (
+                    <p className='py-2 px-3 bg-gray-50 border-2 border-gray-200 rounded-lg'>{user.phone}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Edit Mode Actions */}
+              {isEditMode && (
+                <div className='flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t-2 border-gray-200'>
+                  <Button 
+                    text="Save Changes" 
+                    className="flex-1 bg-green-500 hover:bg-green-600 border-green-600 text-white"
+                    onClick={handleSaveProfile}
+                  />
+                  <Button 
+                    text="Cancel" 
+                    className="flex-1 bg-gray-500 hover:bg-gray-600 border-gray-600 text-white"
+                    onClick={handleEditToggle}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Account Settings Card */}
+            <div className='bg-white border-3 border-matteblack rounded-lg p-6 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-[3px] hover:-translate-y-[3px] transition-all duration-300'>
+              <h3 className='font-bricolage text-xl font-bold mb-6'>Account Settings</h3>
+              
+              <div className='space-y-4'>
+                <div className='flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-colors'>
+                  <div className='flex items-center gap-3'>
+                    <div className='p-2 bg-blue-100 rounded-full'>
+                      <FaLock className='w-4 h-4 text-blue-600' />
+                    </div>
+                    <div>
+                      <h4 className='font-medium'>Password</h4>
+                      <p className='text-sm text-gray-600'>Change your account password</p>
+                    </div>
+                  </div>
+                  <Button 
+                    text="Change" 
+                    className="bg-blue-500 hover:bg-blue-600 border-blue-600 text-white text-sm py-1 px-4"
+                    onClick={handleChangePassword}
+                  />
+                </div>
+
+                <div className='flex items-center justify-between p-4 bg-red-50 rounded-lg border-2 border-red-200 hover:border-red-300 transition-colors'>
+                  <div className='flex items-center gap-3'>
+                    <div className='p-2 bg-red-100 rounded-full'>
+                      <FaSignOutAlt className='w-4 h-4 text-red-600' />
+                    </div>
+                    <div>
+                      <h4 className='font-medium text-red-700'>Logout</h4>
+                      <p className='text-sm text-red-600'>Sign out from your account</p>
+                    </div>
+                  </div>
+                  <Button 
+                    text="Logout" 
+                    className="bg-red-500 hover:bg-red-600 border-red-600 text-white text-sm py-1 px-4"
+                    onClick={() => setShowLogoutModal(true)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Navigation */}
+            <div className='bg-white border-3 border-matteblack rounded-lg p-6 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-[3px] hover:-translate-y-[3px] transition-all duration-300'>
+              <h3 className='font-bricolage text-xl font-bold mb-6'>Quick Navigation</h3>
+              
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <Link 
+                  to="/orders" 
+                  className='flex items-center gap-3 p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-accent hover:bg-accent/10 transition-all group'
+                >
+                  <div className='p-2 bg-accent rounded-full group-hover:scale-110 transition-transform'>
+                    <FaIdCard className='w-4 h-4 text-matteblack' />
+                  </div>
+                  <div>
+                    <h4 className='font-medium'>My Orders</h4>
+                    <p className='text-sm text-gray-600'>View order history</p>
+                  </div>
+                </Link>
+
+                <Link 
+                  to="/catalog" 
+                  className='flex items-center gap-3 p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-accent hover:bg-accent/10 transition-all group'
+                >
+                  <div className='p-2 bg-accent rounded-full group-hover:scale-110 transition-transform'>
+                    <FaUser className='w-4 h-4 text-matteblack' />
+                  </div>
+                  <div>
+                    <h4 className='font-medium'>Continue Shopping</h4>
+                    <p className='text-sm text-gray-600'>Browse products</p>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className='flex  w-1/2 md:mx-auto mx-5 bg-accent border-3 p-7 gap-5 rounded-lg hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-red-500 hover:-translate-x-[4px] hover:-translate-y-[4px] transition-all duration-300'>
-        <div className=''>Logout</div>
-        <img src={assets.logout} alt="" />
-      </div>
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+          <div className='bg-white border-3 border-matteblack rounded-lg p-6 max-w-md w-full'>
+            <h3 className='font-bricolage text-xl font-bold mb-4'>Konfirmasi Logout</h3>
+            <p className='text-gray-600 mb-6'>Apakah Anda yakin ingin keluar dari akun?</p>
+            
+            <div className='flex gap-3'>
+              <Button 
+                text="Batal" 
+                className="flex-1 bg-gray-500 hover:bg-gray-600 border-gray-600 text-white"
+                onClick={() => setShowLogoutModal(false)}
+              />
+              <Button 
+                text="Ya, Logout" 
+                className="flex-1 bg-red-500 hover:bg-red-600 border-red-600 text-white"
+                onClick={handleLogout}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

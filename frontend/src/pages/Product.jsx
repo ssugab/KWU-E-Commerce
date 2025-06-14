@@ -6,6 +6,7 @@ import SimilarProducts from '../components/Products/SimilarProducts';
 import Button from '../components/Button';
 import { FaArrowLeft } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const Product = () => {
   const { productId } = useParams(); // Get productId from URL parameter
@@ -17,6 +18,7 @@ const Product = () => {
   const [quantity, setQuantity] = useState(1); // State untuk quantity
   const [selectedSize, setSelectedSize] = useState('');
   const [activeTab, setActiveTab] = useState('sizeGuide');
+  const { isAuthenticated } = useAuth();
 
   const fetchProduct = async () => {
     // Find product based on ID
@@ -74,7 +76,13 @@ const Product = () => {
     
     // Add to cart
     for (let i = 0; i < quantity; i++) {
-      addToCart(product.id, selectedSize, quantity);
+      if (!isAuthenticated){
+        toast.error("Please login to add to cart");
+        return;
+      } else {
+        addToCart(product.id, selectedSize, quantity);
+      }
+     
     }
     
     // Success message

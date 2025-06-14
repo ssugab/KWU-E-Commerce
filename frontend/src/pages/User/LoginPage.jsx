@@ -12,7 +12,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [npm, setNpm] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,7 +20,6 @@ const LoginPage = () => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,19 +40,20 @@ const LoginPage = () => {
       if (currentState === 'Login') {
         await login(email, password);
         toast.success('Login berhasil!');
+        
       } else {
         await signup(name, npm, email, phone, password);
         toast.success('Registrasi berhasil!');
       }
 
-      // Redirect setelah 2 detik
+      // Redirect to Home Page
       setTimeout(() => {
         navigate('/');
-      }, 2000);
+        window.location.reload();
+      }, 1000);
 
     } catch (error) {
-      console.log(error);
-      toast.error(error.message);
+      toast.error(error.message || error || 'Terjadi kesalahan');
     } finally {
       setIsLoading(false);
     }
@@ -79,32 +79,7 @@ const LoginPage = () => {
 
         {/* Input Field */}
         <div className='flex flex-col w-full bg-offwhite p-10 pb-6 mt-5 mb-10 gap-6 rounded-lg border-2 font-display shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'>
-          {currentState === 'Login' ? null : (
-            <div className="w-full">
-              <label className="block text-sm font-bold mb-2 text-gray-700">Name</label>
-              <input 
-                type="text" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-                placeholder='Insert Your Name' 
-                disabled={isLoading}
-              />
-            </div>
-          )}
-          {currentState === 'Login' ? null : (
-            <div className="w-full">
-              <label className="block text-sm font-bold mb-2 text-gray-700">NPM</label>
-              <input 
-                type="text" 
-                value={npm} 
-                onChange={(e) => setNpm(e.target.value)} 
-                className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-                placeholder='Insert Your NPM' 
-                disabled={isLoading}
-              />
-            </div>
-          )}
+
           <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Email</label>
             <input 
@@ -116,17 +91,7 @@ const LoginPage = () => {
               disabled={isLoading}
             />
           </div>
-          {/* <div className="w-full">
-            <label className="block text-sm font-bold mb-2 text-gray-700">NPM</label>
-              <input 
-                type="text" 
-                value={phone} 
-                onChange={(e) => setNpm(e.target.value)} 
-                className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-                placeholder='Insert Your NPM' 
-                disabled={isLoading}
-            />
-          </div> */}
+
           <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Password</label>
             <input 
@@ -145,13 +110,6 @@ const LoginPage = () => {
             </p>
           )}
        
-          {/* <button  Button manual
-            type="submit" 
-            className={`w-full bg-accent hover:bg-amber-600 border-2 border-black text-offmatte py-3 px-4 rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all
-          ${currentState === 'Sign Up' ? 'mt-4' : ''}`}>
-            {currentState === 'Login' ? 'Login' : 'Sign Up'}
-          </button>} */}
-
           <Button 
             text={isLoading ? 'Loading...' : (currentState === 'Login' ? 'Login' : 'Sign Up')} 
             type="submit"

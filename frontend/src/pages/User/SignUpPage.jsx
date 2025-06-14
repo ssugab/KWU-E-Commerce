@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import Button from '../../components/Button';
 import toast, { Toaster } from 'react-hot-toast';
 import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const SignUpPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { login, signup } = useAuth();
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

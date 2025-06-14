@@ -15,7 +15,7 @@ const ShopContextProvider = (props) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
-  // Load cart dari database saat user login
+  // Load cart from database when user logged in
   const loadCartFromDatabase = async () => {
     if (!isAuthenticated) {
       console.log('User not authenticated, skipping cart load');
@@ -23,7 +23,9 @@ const ShopContextProvider = (props) => {
     }
 
     try {
+      console.log('🔄 Loading cart from database...');
       const response = await cartService.getCart();
+      
       if (response.success && response.cart && response.cart.products) {
         // Convert database cart format ke local cart format
         const loadedCart = {};
@@ -39,11 +41,13 @@ const ShopContextProvider = (props) => {
         });
 
         setCart(loadedCart);
-        console.log('✅ Cart loaded from database:', loadedCart);
+      } else {
+        console.log('📭 No cart found in database or empty cart');
+        setCart({}); // Set empty cart if no database cart
       }
     } catch (error) {
       console.log('🚨 Error loading cart from database:', error);
-      // Jika error, tetap gunakan cart lokal yang ada
+      // Don't show error toast, just log - cart akan tetap menggunakan localStorage
     }
   };
 
@@ -67,13 +71,13 @@ const ShopContextProvider = (props) => {
     if (isAuthenticated) {
       try {
         await cartService.addToCart(productId, size, quantity);
-        toast.success('Produk berhasil ditambahkan ke cart');
+        console.log('✅ Successfully added to database cart');
       } catch (error) {
         console.log('🚨 Error adding to database cart:', error);
         toast.error('Gagal menyimpan ke cart. Data tersimpan sementara.');
       }
     } else {
-      toast.success('Produk ditambahkan ke cart lokal. Login untuk menyimpan permanen.');
+      console.log('Produk ditambahkan ke cart lokal. Login untuk menyimpan permanen.');
     }
   };
 
@@ -199,10 +203,8 @@ const ShopContextProvider = (props) => {
           ...item,
           id: item._id // Add id field that is the same as _id
         }));
-        // console.log('🔄 Mapped products data:', mappedData);
         
         setProducts(mappedData);
-        // console.log('📋 Products state after set:', mappedData.length, 'items');
       } else {
         console.log('❌ API returned success: false');
         console.log('📝 Error message:', response.data.message);
@@ -221,19 +223,18 @@ const ShopContextProvider = (props) => {
     }
   }
 
-  // Load cart dari database saat user login
+  // Load cart from database when user logged in
   useEffect(() => {
-    if (isAuthenticated) {
-      console.log('User authenticated, loading cart from database...');
+    if (isAuthenticated && products.length > 0) {
+      console.log('User authenticated and products loaded, loading cart from database...');
       loadCartFromDatabase();
-    } else {
-      console.log('User not authenticated, using local cart only');
     }
-  }, [isAuthenticated]);
 
-  useEffect(() => {
+  }, [isAuthenticated, products.length]);
+
+  /* useEffect(() => {
     console.log('🛒 Cart state:', cart);
-  }, [cart]);
+  }, [cart]);*/ 
 
   useEffect(() => {
     getProducts();

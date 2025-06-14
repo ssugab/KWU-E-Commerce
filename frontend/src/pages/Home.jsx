@@ -6,11 +6,10 @@ import 'swiper/css/pagination';
 import { Navigation, Pagination } from 'swiper/modules';
 
 import { Link } from 'react-router-dom';
-import { assets } from '../assets/assets';
+import { assets,  howToOrder } from '../assets/assets';
 import LatestProducts from '../components/Products/LatestProducts';
 import Button from "../components/Button";
 import { FaInstagram, FaTiktok, FaYoutube, FaEnvelope } from 'react-icons/fa';
-
 
 const Home = () => {
   // Products Ospek Kit
@@ -59,13 +58,6 @@ const Home = () => {
             </div>
           </div>    
 
-          {/* BRAND NEW Banner 
-          <div className="absolute w-full flex flex-col items-center">
-            <div className="bg-offwhite mb-5 overflow-visible border-3 border-t-0 p-2">
-              <h1 className="text-2xl md:text-3xl font-display font-bold">BRAND NEW!!</h1>
-            </div>
-          </div> */}
-
           {/* Hero Right (Nama Produk & Link) */}
           <div className="flex flex-col w-full md:w-1/2 border-l-0 md:border-l-3 md:border-t-0 border-t-3 md:mb-0 mb-15 py-5 justify-center items-center md:items-start text-center md:text-left ">
             <div className='bg-accent p-2 md:mt-[-130px] md:mb-10 border-4 md:border-l-0 border-matteblack'>
@@ -81,7 +73,7 @@ const Home = () => {
 
         </section>
 
-        {/* Sale Section */}
+        {/* Sale Section 
         <section className="promo flex flex-col items-center bg-accent md:flex-row p-5 font-display">
           <div className="text-center md:text-left w-full md:w-1/2">
             <h1 className="text-3xl md:text-2xl font-atemica">SALE!</h1>
@@ -97,8 +89,8 @@ const Home = () => {
               <h1 className="text-xl md:text-2xl  ml-5 text-red-600">Rp 49.000</h1>
             </div> 
           </div>
-        </section>
-        
+        </section> */}
+        <div className="promo flex flex-col items-center bg-accent md:flex-row p-5 font-display"></div>
         {/* Product Section */}
         <section className='border-t-3 relative overflow-hidden'>
           {/* Grid Background Pattern */}
@@ -130,15 +122,15 @@ const Home = () => {
         </section>
 
         {/* How To Order section */}
-        <section className='flex flex-col items-start bg-accent p-10'>
-          <h2 className='text-4xl font-bricolage text-start pb-5'>HOW TO ORDER</h2>
+        <section className='flex flex-col items-start md:items-center bg-accent p-10'>
+          <h2 className='text-4xl font-bricolage text-start pb-5'>How To Order</h2>
           <div className='flex flex-col items-start border-3 p-5 shadow-matteblack'>
-            <h3 className='text-xl font-display-bold text-center'>1. Login</h3>
-            <h3 className='text-xl font-display-bold text-center'>2. Choose Product & Quantity</h3>
-            <h3 className='text-xl font-display-bold text-center'>3. Add to Cart</h3>
-            <h3 className='text-xl font-display-bold text-center'>4. Checkout</h3>
-            <h3 className='text-xl font-display-bold text-center'>5. Payment</h3>
-            <h3 className='text-xl font-display-bold text-center'>6. Wait for Confirmation</h3>
+            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step1}</h3>
+            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step2}</h3>
+            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step3}</h3>
+            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step4}</h3>
+            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step5}</h3>
+            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step6}</h3>
           </div>
         </section>
 

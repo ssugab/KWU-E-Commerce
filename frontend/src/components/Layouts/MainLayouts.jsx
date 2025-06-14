@@ -1,7 +1,7 @@
 import React from "react";
 import Navbar from "../Navbar";
 import Footer from "../Footer";
-import { Outlet } from "react-router-dom"; // Agar halaman dinamis muncul di dalamnya
+import { Outlet } from "react-router-dom"; // Outlet untuk menampilkan halaman dinamis
 
 const MainLayout = () => {
   return (

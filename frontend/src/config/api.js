@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
     LOGOUT: `${API_URL}/user/logout`,
     PROFILE: `${API_URL}/user/profile`,
     ADMIN_LOGIN: `${API_URL}/user/admin-login`,
+    ADMIN_DASHBOARD: `${API_URL}/admin/dashboard`,
   },
   PRODUCTS: {
     GET_ALL: `${API_URL}/products`,
@@ -28,7 +29,7 @@ export const API_ENDPOINTS = {
     GET_ALL: `${API_URL}/orders`,
     GET_ONE: (id) => `${API_URL}/orders/${id}`,
     GET_BY_NUMBER: (orderNumber) => `${API_URL}/orders/number/${orderNumber}`,
-    GET_BY_EMAIL: (email) => `${API_URL}/orders/customer/${email}`,
+    GET_BY_EMAIL: (email) => `${API_URL}/orders/user/${email}`,
     UPDATE_STATUS: (id) => `${API_URL}/orders/${id}/status`,
     UPDATE_PAYMENT: (id) => `${API_URL}/orders/${id}/payment`,
     CANCEL: (id) => `${API_URL}/orders/${id}/cancel`,
