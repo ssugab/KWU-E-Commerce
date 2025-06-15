@@ -17,7 +17,6 @@ dotenv.config();
 const app = express();
 connectDB();
 
-
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -26,7 +25,7 @@ app.use(express.json());
 app.use('/api/catalog', productRoutes);
 app.use('/api/user', userRouter);
 app.use('/api/cart', cartRouter);
-app.use('/api/order', orderRouter);
+app.use('/api/orders', orderRouter);
 
 // API Endpoints
 app.get('/', (req, res) => {

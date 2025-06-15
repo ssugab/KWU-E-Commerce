@@ -1,20 +1,39 @@
 import Order from '../models/Orders.js';
 import Product from '../models/Product.js';
 
-// Create new order
 const createOrder = async (req, res) => {
   try {
-    const { customer, items, pricing, notes } = req.body;
+    const { customer, items, pricing } = req.body;
 
-    // Validasi input
+    // Validate input
     if (!customer || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Data customer dan items wajib diisi'
+        message: 'Customer data and items are required'
       });
     }
 
-    // Validasi dan ambil detail produk
+    // Validate customer data
+    if (!customer.name || !customer.email || !customer.phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer data is not complete (name, email, phone are required)'
+      });
+    }
+
+    // Get userID from auth middleware (assume user is authenticated)
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      console.error('❌ User not authenticated in createOrder:', req.user);
+      return res.status(401).json({
+        success: false,
+        message: 'User is not authenticated'
+      });
+    }
+    
+    console.log('✅ Authenticated user ID:', userId);
+
+    // Validate and get product details for orderItems
     const orderItems = [];
     let calculatedSubtotal = 0;
 
@@ -23,15 +42,15 @@ const createOrder = async (req, res) => {
       if (!product) {
         return res.status(400).json({
           success: false,
-          message: `Produk dengan ID ${item.productId} tidak ditemukan`
+          message: `Product with ID ${item.productId} not found`
         });
       }
 
-      // Cek stock jika ada
+      // Check stock if available
       if (product.stock !== undefined && product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
-          message: `Stock ${product.name} tidak mencukupi. Stock tersedia: ${product.stock}`
+          message: `Stock ${product.name} is not enough. Stock available: ${product.stock}`
         });
       }
 
@@ -49,10 +68,6 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Hitung shipping
-    const shipping = calculatedSubtotal >= 100000 ? 0 : 15000;
-    const total = calculatedSubtotal + shipping;
-
     // Validasi pricing jika dikirim dari frontend
     if (pricing) {
       if (Math.abs(pricing.subtotal - calculatedSubtotal) > 0.01) {
@@ -65,14 +80,18 @@ const createOrder = async (req, res) => {
 
     // Buat order baru
     const newOrder = new Order({
-      customer,
-      items: orderItems,
+      userId: userId,
+      customer: {
+        name: customer.name,
+        email: customer.email.toLowerCase(),
+        phone: customer.phone,
+        npm: customer.npm || ''
+      },
+      orderItems: orderItems,
       pricing: {
         subtotal: calculatedSubtotal,
-        shipping: shipping,
-        total: total
+        total: calculatedSubtotal
       },
-      notes: notes || '',
       status: 'pending_confirmation',
       paymentStatus: 'pending'
     });
@@ -81,7 +100,7 @@ const createOrder = async (req, res) => {
     const savedOrder = await newOrder.save();
 
     // Populate product details
-    await savedOrder.populate('items.productId');
+    await savedOrder.populate('orderItems.productId');
 
     res.status(201).json({
       success: true,
@@ -102,7 +121,7 @@ const createOrder = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: 'Terjadi kesalahan server',
+      message: error.message,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -111,19 +130,21 @@ const createOrder = async (req, res) => {
 // Get order by ID
 const getOrder = async (req, res) => {
   try {
-    const { orderId } = req.params;
+    const { id: orderId } = req.params; // Menggunakan 'id' sesuai dengan route /:id
+
+    console.log('🔍 Getting order with ID:', orderId);
 
     const order = await Order.findById(orderId)
-      .populate('items.productId')
+      .populate('orderItems.productId')
       .exec();
 
     if (!order) {
+      console.log('❌ Order not found:', orderId);
       return res.status(404).json({
         success: false,
         message: 'Pesanan tidak ditemukan'
       });
     }
-
     res.status(200).json({
       success: true,
       order: order
@@ -138,36 +159,6 @@ const getOrder = async (req, res) => {
   }
 };
 
-// Get order by order number
-const getOrderByNumber = async (req, res) => {
-  try {
-    const { orderNumber } = req.params;
-
-    const order = await Order.findOne({ orderNumber })
-      .populate('items.productId')
-      .exec();
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Pesanan tidak ditemukan'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      order: order
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching order by number:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Terjadi kesalahan server'
-    });
-  }
-};
-
 // Get orders by customer email
 const getOrdersByEmail = async (req, res) => {
   try {
@@ -175,7 +166,7 @@ const getOrdersByEmail = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
 
     const orders = await Order.find({ 'customer.email': email.toLowerCase() })
-      .populate('items.productId')
+      .populate('orderItems.productId')
       .sort({ orderDate: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -202,6 +193,30 @@ const getOrdersByEmail = async (req, res) => {
   }
 };
 
+const getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ userId: req.user.userId })
+
+    if (!orders) {
+      return res.status(404).json({
+        success: false,
+        message: 'No orders found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      orders: orders
+    });
+  } catch (error) {
+    console.error('❌ Error fetching my orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan server'
+    });
+  }
+}
+
 // Get all orders (admin)
 const getAllOrders = async (req, res) => {
   try {
@@ -221,9 +236,7 @@ const getAllOrders = async (req, res) => {
     if (paymentStatus) filter.paymentStatus = paymentStatus;
     if (search) {
       filter.$or = [
-        { orderNumber: { $regex: search, $options: 'i' } },
-        { 'customer.firstName': { $regex: search, $options: 'i' } },
-        { 'customer.lastName': { $regex: search, $options: 'i' } },
+        { 'customer.name': { $regex: search, $options: 'i' } },
         { 'customer.email': { $regex: search, $options: 'i' } }
       ];
     }
@@ -233,7 +246,7 @@ const getAllOrders = async (req, res) => {
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     const orders = await Order.find(filter)
-      .populate('items.productId')
+      .populate('orderItems.productId')
       .sort(sort)
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -285,10 +298,10 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-// Update order status
+// Update order status - Admin only
 const updateOrderStatus = async (req, res) => {
   try {
-    const { orderId } = req.params;
+    const { id: orderId } = req.params;
     const { status, adminNotes, updatedBy = 'admin' } = req.body;
 
     const order = await Order.findById(orderId);
@@ -317,7 +330,7 @@ const updateOrderStatus = async (req, res) => {
       await order.save();
     }
 
-    await order.populate('items.productId');
+    await order.populate('orderItems.productId');
 
     res.status(200).json({
       success: true,
@@ -334,10 +347,10 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-// Update payment status
+// Update payment status - Admin only
 const updatePaymentStatus = async (req, res) => {
   try {
-    const { orderId } = req.params;
+    const { id: orderId } = req.params;
     const { paymentStatus, paymentMethod } = req.body;
 
     const order = await Order.findById(orderId);
@@ -363,7 +376,7 @@ const updatePaymentStatus = async (req, res) => {
     }
 
     await order.save();
-    await order.populate('items.productId');
+    await order.populate('orderItems.productId');
 
     res.status(200).json({
       success: true,
@@ -383,7 +396,7 @@ const updatePaymentStatus = async (req, res) => {
 // Cancel order
 const cancelOrder = async (req, res) => {
   try {
-    const { orderId } = req.params;
+    const { id: orderId } = req.params;
     const { reason, cancelledBy = 'customer' } = req.body;
 
     const order = await Order.findById(orderId);
@@ -411,7 +424,7 @@ const cancelOrder = async (req, res) => {
 
     await order.updateStatus('cancelled', cancelledBy, reason || 'Dibatalkan');
 
-    await order.populate('items.productId');
+    await order.populate('orderItems.productId');
 
     res.status(200).json({
       success: true,
@@ -431,7 +444,7 @@ const cancelOrder = async (req, res) => {
 // Delete order (admin only)
 const deleteOrder = async (req, res) => {
   try {
-    const { orderId } = req.params;
+    const { id: orderId } = req.params;
 
     const order = await Order.findById(orderId);
     if (!order) {
@@ -457,14 +470,73 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+// Upload payment proof
+const uploadPaymentProof = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    
+    // Cek apakah file terupload
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    console.log('📁 File uploaded:', req.file);
+
+    // Cari order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Update order dengan payment proof
+    order.paymentProof = {
+      imageUrl: req.file.path, // URL dari Cloudinary
+      cloudinaryId: req.file.filename, // ID untuk hapus file nanti
+      uploadedAt: new Date()
+    };
+    
+    // Update payment status menjadi 'paid' (menunggu konfirmasi admin)
+    order.paymentStatus = 'paid';
+    
+    await order.save();
+
+    console.log('✅ Payment proof uploaded successfully:', {
+      orderId: order._id,
+      imageUrl: order.paymentProof.imageUrl
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment proof uploaded successfully',
+      order: order,
+      paymentProof: order.paymentProof
+    });
+
+  } catch (error) {
+    console.error('❌ Error uploading payment proof:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload payment proof',
+      error: error.message
+    });
+  }
+};
+
 export {
   createOrder,
   getOrder,
-  getOrderByNumber,
+  getMyOrders,
   getOrdersByEmail,
   getAllOrders,
   updateOrderStatus,
   updatePaymentStatus,
+  uploadPaymentProof,
   cancelOrder,
   deleteOrder
 };

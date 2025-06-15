@@ -1,7 +1,7 @@
 import cartModel from '../models/Cart.js';
 import userModel from '../models/User.js';
 
-// Menambah item ke cart
+// Add item to cart
 const addToCart = async (req, res) => {
   try {
     const { productId, size, quantity } = req.body;
@@ -11,14 +11,13 @@ const addToCart = async (req, res) => {
       return res.json({ success: false, message: 'Product ID dan quantity harus diisi' });
     }
 
-    // Cari cart user yang sudah ada
+    // Find existing cart for user
     let cart = await cartModel.findOne({ userId });
 
     if (!cart) {
-      // Jika cart belum ada, buat cart baru
+      // If cart doesn't exist, create new cart
       cart = new cartModel({
         userId,
-        name: user.name,
         products: [{
           productId,
           size: size || 'default',

@@ -1,18 +1,13 @@
-import mongoose from 'mongoose';
+import mongoose, { mongo } from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
-  orderNumber: {
-    type: String,
-    unique: true,
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
   customer: {
-    firstName: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    lastName: {
+    name: {
       type: String,
       required: true,
       trim: true
@@ -28,25 +23,13 @@ const orderSchema = new mongoose.Schema({
       required: true,
       trim: true
     },
-    address: {
-      street: {
-        type: String,
-        required: true,
-        trim: true
-      },
-      city: {
-        type: String,
-        required: true,
-        trim: true
-      },
-      postalCode: {
-        type: String,
-        required: true,
-        trim: true
-      }
+    npm: {
+      type: String,
+      required: false,
+      trim: true
     }
   },
-  items: [{
+  orderItems: [{
     productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
@@ -84,12 +67,6 @@ const orderSchema = new mongoose.Schema({
       required: true,
       min: 0
     },
-    shipping: {
-      type: Number,
-      required: true,
-      min: 0,
-      default: 0
-    },
     total: {
       type: Number,
       required: true,
@@ -99,10 +76,10 @@ const orderSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: [
-      'pending_confirmation',  // Menunggu konfirmasi admin
-      'confirmed',            // Dikonfirmasi admin, siap pickup
-      'picked_up',           // Sudah diambil customer
-      'cancelled',           // Dibatalkan
+      'pending_confirmation',  // Waiting for admin confirmation
+      'confirmed',            // Confirmed by admin, ready for pickup
+      'picked_up',           // Picked up by customer
+      'cancelled',           // Cancelled
       'expired'              // Kadaluarsa (tidak diambil dalam waktu tertentu)
     ],
     default: 'pending_confirmation'
@@ -114,13 +91,22 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['cash', 'transfer', 'qris'],
+    enum: ['QRIS'],
     default: null
   },
-  notes: {
-    type: String,
-    trim: true,
-    default: ''
+  paymentProof: {
+    imageUrl: {
+      type: String,
+      default: null
+    },
+    cloudinaryId: {
+      type: String,
+      default: null
+    },
+    uploadedAt: {
+      type: Date,
+      default: null
+    }
   },
   orderDate: {
     type: Date,
@@ -131,10 +117,6 @@ const orderSchema = new mongoose.Schema({
     default: null
   },
   pickupDate: {
-    type: Date,
-    default: null
-  },
-  estimatedPickupDate: {
     type: Date,
     default: null
   },
@@ -162,26 +144,10 @@ orderSchema.index({ 'customer.email': 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ orderDate: -1 });
 
-// Virtual untuk nama lengkap customer
-orderSchema.virtual('customer.fullName').get(function() {
-  return `${this.customer.firstName} ${this.customer.lastName}`;
-});
-
 // Virtual untuk total items
 orderSchema.virtual('totalItems').get(function() {
-  return this.items.reduce((total, item) => total + item.quantity, 0);
+  return this.orderItems.reduce((total, item) => total + item.quantity, 0);
 });
-
-// Method untuk generate order number
-orderSchema.statics.generateOrderNumber = function() {
-  const now = new Date();
-  const year = now.getFullYear().toString().slice(-2);
-  const month = (now.getMonth() + 1).toString().padStart(2, '0');
-  const day = now.getDate().toString().padStart(2, '0');
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  
-  return `KWU${year}${month}${day}${random}`;
-};
 
 // Method untuk update status dengan history tracking
 orderSchema.methods.updateStatus = function(newStatus, updatedBy = 'system', notes = '') {
@@ -223,26 +189,6 @@ orderSchema.methods.checkExpiration = function() {
   }
   return false;
 };
-
-// Pre-save hook untuk generate order number jika belum ada
-orderSchema.pre('save', async function(next) {
-  if (this.isNew && !this.orderNumber) {
-    let orderNumber;
-    let isUnique = false;
-    
-    // Generate unique order number
-    while (!isUnique) {
-      orderNumber = this.constructor.generateOrderNumber();
-      const existing = await this.constructor.findOne({ orderNumber });
-      if (!existing) {
-        isUnique = true;
-      }
-    }
-    
-    this.orderNumber = orderNumber;
-  }
-  next();
-});
 
 // Ensure virtual fields are serialized
 orderSchema.set('toJSON', { virtuals: true });

@@ -1,24 +1,28 @@
 import express from 'express';
 import { createOrder, 
   getOrder, 
-  getOrderByNumber, 
+  getMyOrders,
   getOrdersByEmail, 
   getAllOrders, 
   updateOrderStatus, 
   updatePaymentStatus, 
+  uploadPaymentProof,
   cancelOrder,
   deleteOrder } 
 from '../controllers/orderController.js';
+import { auth } from '../middleware/authMiddleware.js';
+import { uploadPaymentProof as uploadMiddleware } from '../config/cloudinary.js';
 
 const orderRouter = express.Router();
 
-orderRouter.post('/', createOrder);
-orderRouter.get('/:id', getOrder);
-orderRouter.get('/number/:number', getOrderByNumber);
-orderRouter.get('/email/:email', getOrdersByEmail);
+orderRouter.post('/create', auth, createOrder);
 orderRouter.get('/', getAllOrders);
+orderRouter.get('/:id', getOrder);
+orderRouter.get('/my-orders', auth, getMyOrders);
+orderRouter.get('/user/:email', getOrdersByEmail); // hapus fungsi ini dan routenya
 orderRouter.put('/:id/status', updateOrderStatus);
 orderRouter.put('/:id/payment', updatePaymentStatus);
+orderRouter.post('/:id/upload-proof', auth, uploadMiddleware.single('paymentProof'), uploadPaymentProof);
 orderRouter.put('/:id/cancel', cancelOrder);
 orderRouter.delete('/:id', deleteOrder);
 

@@ -1,10 +1,11 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+import { redis } from '../config/redis';
 
 // Register user baru
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, npm, email, password, phone } = req.body;
 
     // Cek apakah email sudah terdaftar
     const existingUser = await User.findOne({ email });
@@ -15,6 +16,7 @@ exports.register = async (req, res) => {
     // Buat user baru
     const user = new User({
       name,
+      npm,
       email,
       password,
       phone
@@ -35,6 +37,7 @@ exports.register = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
+        npm: user.npm,
         email: user.email,
         phone: user.phone,
         role: user.role
@@ -75,6 +78,7 @@ exports.login = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
+        npm: user.npm,
         email: user.email,
         phone: user.phone,
         role: user.role
