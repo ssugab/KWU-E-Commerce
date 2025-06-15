@@ -78,6 +78,7 @@ const orderSchema = new mongoose.Schema({
     enum: [
       'pending_confirmation',  // Waiting for admin confirmation
       'confirmed',            // Confirmed by admin, ready for pickup
+      'ready_pickup',         // Pesanan siap diambil (dengan notifikasi)
       'picked_up',           // Picked up by customer
       'cancelled',           // Cancelled
       'expired'              // Kadaluarsa (tidak diambil dalam waktu tertentu)
@@ -125,6 +126,26 @@ const orderSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  // Sistem notifikasi sederhana
+  notifications: {
+    readyPickupSent: {
+      type: Boolean,
+      default: false
+    },
+    readyPickupDate: {
+      type: Date,
+      default: null
+    },
+    newOrderNotified: {
+      type: Boolean,
+      default: false
+    }
+  },
+  // Estimasi tanggal pickup
+  estimatedPickupDate: {
+    type: Date,
+    default: null
+  },
   // Tracking untuk perubahan status
   statusHistory: [{
     status: String,
@@ -169,6 +190,14 @@ orderSchema.methods.updateStatus = function(newStatus, updatedBy = 'system', not
     const estimatedDate = new Date();
     estimatedDate.setDate(estimatedDate.getDate() + 2);
     this.estimatedPickupDate = estimatedDate;
+  } else if (newStatus === 'ready_pickup') {
+    // Pesanan siap diambil
+    this.notifications.readyPickupDate = new Date();
+    this.notifications.readyPickupSent = false; // Reset untuk dikirim ulang jika perlu
+    // Estimasi pickup dalam 7 hari
+    const pickupDeadline = new Date();
+    pickupDeadline.setDate(pickupDeadline.getDate() + 7);
+    this.estimatedPickupDate = pickupDeadline;
   } else if (newStatus === 'picked_up') {
     this.pickupDate = new Date();
   }
