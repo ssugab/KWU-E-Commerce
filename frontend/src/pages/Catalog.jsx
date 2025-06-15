@@ -32,7 +32,6 @@ const Catalog = () => {
   }
 
   const applyFilter = () => {
-
     let productsCopy = products.slice();
 
     if(category.length > 0) {
@@ -81,7 +80,6 @@ const Catalog = () => {
         applyFilter();
         break;
     }
-
   }
 
   useEffect(() => {

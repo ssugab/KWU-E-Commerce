@@ -1,89 +1,96 @@
-import React, { useContext, useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import { useCheckout } from '../hooks/useCheckout'
+import { useAuth } from '../context/AuthContext'
 import { assets } from '../assets/assets'
-import { Link } from 'react-router-dom'
+import { API_ENDPOINTS } from '../config/api'
 import { FaArrowLeft, FaUpload, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import Button from '../components/Button'
 import toast from 'react-hot-toast'
-import { useAuth } from '../context/AuthContext'
 
 const Payment = () => {
   const { navigate } = useContext(ShopContext);
-  const { getCurrentOrderFromSession, updatePaymentStatus } = useCheckout();
+  const { getCurrentOrderFromSession } = useCheckout();
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [paymentProof, setPaymentProof] = useState(null);
-  const [paymentProofPreview, setPaymentProofPreview] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState('pending');
+  
+  // 📦 STATE - Hanya yang diperlukan
+  const [order, setOrder] = useState(null);                    // Data pesanan
+  const [loading, setLoading] = useState(true);                // Loading state
+  const [paymentFile, setPaymentFile] = useState(null);        // File bukti bayar
+  const [filePreview, setFilePreview] = useState(null);        // Preview gambar
+  const [uploading, setUploading] = useState(false);           // Status upload
 
-  // Redirect jika user belum login 
+  // 🔐 CEK LOGIN - Redirect jika belum login
   useEffect(() => {
-    // Tunggu sampai loading selesai sebelum redirect
     if (!authLoading && !isAuthenticated) {
-      toast.error('Silakan login dan pesan untuk melihat pembayaran');
+      toast.error('Please login and order to see payment');
       navigate('/login');
     }
-  }, [isAuthenticated, authLoading, navigate])
+  }, [isAuthenticated, authLoading, navigate]);
 
-  // Load order data saat component mount
+  // 📋 LOAD ORDER - Ambil data pesanan
   useEffect(() => {
-    const loadOrderData = async () => {
+    const loadOrder = async () => {
+      if (!isAuthenticated || authLoading) return;
+      
       setLoading(true);
       try {
+        console.log('🔄 Loading order data...');
         const orderData = await getCurrentOrderFromSession();
+        
         if (orderData) {
+          console.log('✅ Order loaded:', orderData);
           setOrder(orderData);
-          setPaymentStatus(orderData.paymentStatus || 'pending');
         } else {
-          // toast.error('Order tidak ditemukan. Silakan lakukan checkout kembali.');
-          // navigate('/checkout');
+          console.log('❌ No order found');
+          toast.error('Order tidak ditemukan. Silakan checkout kembali.');
+          navigate('/cart');
         }
       } catch (error) {
         console.error('Error loading order:', error);
-        toast.error('Gagal memuat data pesanan');
+        toast.error('Failed to load order data');
         navigate('/cart');
       } finally {
         setLoading(false);
       }
     };
 
-    loadOrderData();
-  }, [getCurrentOrderFromSession, navigate]);
+    loadOrder();
+  }, [isAuthenticated, authLoading, getCurrentOrderFromSession, navigate]);
 
-  // Handle file upload untuk bukti pembayaran
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validasi file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-      if (!allowedTypes.includes(file.type)) {
-        toast.error('Format file tidak didukung. Gunakan JPG, JPEG, atau PNG.');
-        return;
-      }
+  // 📁 HANDLE FILE UPLOAD - Validasi dan preview file
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-      // Validasi file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Ukuran file terlalu besar. Maksimal 5MB.');
-        return;
-      }
-
-      setPaymentProof(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPaymentProofPreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
+    // ✅ Validasi format file
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Format file tidak didukung. Gunakan JPG, JPEG, atau PNG.');
+      return;
     }
+
+    // ✅ Validasi ukuran file (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('Ukuran file terlalu besar. Maksimal 5MB.');
+      return;
+    }
+
+    // 💾 Simpan file dan buat preview
+    setPaymentFile(file);
+    
+    const reader = new FileReader();
+    reader.onload = (e) => setFilePreview(e.target.result);
+    reader.readAsDataURL(file);
+    
+    console.log('📁 File selected:', file.name);
   };
 
-  // Submit bukti pembayaran
-  const handleSubmitPayment = async () => {
-    if (!paymentProof) {
+  // 🚀 SUBMIT PAYMENT - Upload to Cloudinary
+  const submitPayment = async () => {
+    // ✅ Validate payment proof
+    if (!paymentFile) {
       toast.error('Silakan pilih file bukti pembayaran terlebih dahulu.');
       return;
     }
@@ -93,49 +100,67 @@ const Payment = () => {
       return;
     }
 
-    setIsUploading(true);
+    setUploading(true);
     try {
-      // Untuk sementara, kita simulasikan upload
-      // Di production, ini akan upload ke cloudinary atau storage service
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulasi upload delay
+      console.log('🚀 Uploading payment proof to Cloudinary...');
+      
+      // 📁 Prepare FormData for file upload
+      const formData = new FormData();
+      formData.append('paymentProof', paymentFile);
+      
+      console.log('📤 FormData prepared:', {
+        fileName: paymentFile.name,
+        fileSize: paymentFile.size,
+        fileType: paymentFile.type
+      });
 
-      // Update payment status ke 'paid'
-      const result = await updatePaymentStatus(order._id, 'paid', 'qris');
+      // 🌐 Upload to Cloudinary via backend
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_ENDPOINTS.ORDERS.UPLOAD_PROOF(order._id)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+      console.log('📨 Upload response:', result);
       
       if (result.success) {
-        setPaymentStatus('paid');
-        toast.success('Bukti pembayaran berhasil dikirim! Pesanan Anda akan segera diproses.');
+        console.log('✅ Payment proof uploaded successfully');
+        toast.success('Bukti pembayaran berhasil dikirim! Menunggu konfirmasi admin.');
         
-        // Redirect ke orders page setelah 2 detik
+        // 🔄 Redirect to orders page after 2 seconds
         setTimeout(() => {
           navigate('/orders');
         }, 2000);
       } else {
-        toast.error(result.message || 'Gagal mengirim bukti pembayaran');
+        throw new Error(result.message || 'Failed to upload payment proof');
       }
     } catch (error) {
-      console.error('Error submitting payment proof:', error);
-      toast.error('Terjadi kesalahan saat mengirim bukti pembayaran');
+      console.error('❌ Error uploading payment proof:', error);
+      toast.error(error.message || 'Gagal mengirim bukti pembayaran');
     } finally {
-      setIsUploading(false);
+      setUploading(false);
     }
   };
 
-  // Loading state - cek auth loading dulu
+  // 🔄 LOADING STATE
   if (authLoading || loading) {
     return (
       <div className='min-h-screen flex items-center justify-center'>
         <div className='text-center'>
           <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4'></div>
           <p className='text-gray-600'>
-            {authLoading ? 'Memverifikasi login...' : 'Memuat data pembayaran...'}
+            {authLoading ? 'Verifying login...' : 'Loading payment data...'}
           </p>
         </div>
       </div>
     );
   }
 
-  // Jika tidak ada order
+  // ❌ NO ORDER STATE
   if (!order) {
     return (
       <div className='min-h-screen flex items-center justify-center'>
@@ -148,117 +173,83 @@ const Payment = () => {
     );
   }
 
+  // 💰 Check if order is paid
+  const isPaid = order.paymentStatus === 'paid';
+
   return (
     <div className='min-h-screen bg-offwhite2'>
       <div className='container mx-auto px-4 py-8'>
         <div className='max-w-4xl mx-auto'>
           
-          {/* Header */}
-          <div className='flex justify-between items-center mb-6'>
-            <div className='flex items-center gap-4'>
-              <Link to='/checkout' className='flex items-center gap-2 text-accent hover:underline text-sm transition-colors'>
-                <FaArrowLeft className="w-3 h-3" />
-                <span>Checkout</span>
-              </Link>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-700 font-medium">Payment</span>
-            </div>
+          {/* 🔙 HEADER - Back to checkout */}
+          <div className='flex items-center gap-4 mb-6'>
+            <button 
+              onClick={() => navigate('/checkout')} 
+              className='flex items-center gap-2 text-accent hover:underline text-sm'
+            >
+              <FaArrowLeft className="w-3 h-3" />
+              <span>Back to Checkout</span>
+            </button>
           </div>
 
-          {/* Page Title */}
+          {/* 📋 TITLE */}
           <h1 className='font-atemica text-2xl md:text-3xl mb-8 text-gray-900'>
-            Pembayaran Pesanan
+            Order Payment
           </h1>
 
-          {/* Progress Indicator */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                  ✓
-                </div>
-                <span className="ml-2 text-sm text-green-600 font-medium">Cart</span>
-              </div>
-              <div className="w-8 h-1 bg-green-500"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                  ✓
-                </div>
-                <span className="ml-2 text-sm text-green-600 font-medium">Checkout</span>
-              </div>
-              <div className="w-8 h-1 bg-accent"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center text-sm font-medium">
-                  3
-                </div>
-                <span className="ml-2 text-sm text-gray-900 font-medium">Payment</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Payment Content */}
+          {/* 📊 MAIN CONTENT */}
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
             
-            {/* Left Column - Order Summary */}
+            {/* 📋 LEFT: ORDER SUMMARY */}
             <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
-              <h2 className='font-atemica text-xl mb-6 text-gray-900'>📋 Ringkasan Pesanan</h2>
+              <h2 className='font-atemica text-xl mb-6 text-gray-900'>📋 Order Summary</h2>
               
               <div className='space-y-4 mb-6'>
                 <div className='flex justify-between'>
-                  <span className='text-gray-600'>Order Number:</span>
-                  <span className='font-medium'>{order.orderNumber}</span>
+                  <span className='text-gray-600'>Order ID:</span>
+                  <span className='font-medium'>{order._id}</span>
                 </div>
                 <div className='flex justify-between'>
                   <span className='text-gray-600'>Customer:</span>
-                  <span className='font-medium'>{order.customer?.firstName} {order.customer?.lastName}</span>
-                </div>
-                <div className='flex justify-between'>
-                  <span className='text-gray-600'>Email:</span>
-                  <span className='font-medium'>{order.customer?.email}</span>
+                  <span className='font-medium'>{order.customer?.name}</span>
                 </div>
                 <div className='flex justify-between'>
                   <span className='text-gray-600'>Total Items:</span>
-                  <span className='font-medium'>{order.items?.length || 0} item(s)</span>
+                  <span className='font-medium'>{order.orderItems?.length || 0} item(s)</span>
                 </div>
                 
                 <hr className='border-gray-200' />
                 
                 <div className='flex justify-between text-lg font-bold'>
-                  <span>Total Pembayaran:</span>
+                  <span>Total Payment:</span>
                   <span className='text-accent'>Rp {order.pricing?.total?.toLocaleString() || '0'}</span>
                 </div>
               </div>
 
-              {/* Payment Status */}
-              <div className='bg-gray-50 p-4 rounded-lg mb-6'>
+              {/* 💳 PAYMENT STATUS */}
+              <div className='bg-gray-50 p-4 rounded-lg'>
                 <div className='flex items-center gap-2 mb-2'>
-                  {paymentStatus === 'paid' ? (
+                  {isPaid ? (
                     <FaCheckCircle className='text-green-500' />
-                  ) : paymentStatus === 'failed' ? (
-                    <FaTimesCircle className='text-red-500' />
                   ) : (
                     <div className='w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin'></div>
                   )}
-                  <h3 className='font-semibold'>Status Pembayaran</h3>
+                  <h3 className='font-semibold'>Payment Status</h3>
                 </div>
-                <p className={`text-sm ${
-                  paymentStatus === 'paid' ? 'text-green-700' : 
-                  paymentStatus === 'failed' ? 'text-red-700' : 'text-orange-700'
-                }`}>
-                  {paymentStatus === 'paid' ? 'Pembayaran Berhasil' : 
-                   paymentStatus === 'failed' ? 'Pembayaran Gagal' : 'Menunggu Pembayaran'}
+                <p className={`text-sm ${isPaid ? 'text-green-700' : 'text-orange-700'}`}>
+                  {isPaid ? 'Payment Success' : 'Waiting for Payment'}
                 </p>
               </div>
             </div>
 
-            {/* Right Column - Payment Method & Upload */}
+            {/* 💳 RIGHT: PAYMENT METHOD */}
             <div className='space-y-6'>
               
-              {/* QR Code Payment */}
+              {/* 📱 QR CODE */}
               <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
-                <h2 className='font-atemica text-xl mb-6 text-gray-900'>💳 Metode Pembayaran</h2>
+                <h2 className='font-atemica text-xl mb-6 text-gray-900'>💳 Scan to Pay</h2>
                 
-                <div className='text-center mb-6'>
+                <div className='text-center'>
                   <div className='bg-gray-50 p-6 rounded-lg mb-4'>
                     <img 
                       src={assets.qrCode} 
@@ -268,7 +259,7 @@ const Payment = () => {
                   </div>
                   <h3 className='font-semibold text-lg mb-2'>Scan QR Code</h3>
                   <p className='text-gray-600 text-sm mb-4'>
-                    Gunakan aplikasi mobile banking atau e-wallet Anda untuk melakukan pembayaran
+                    Use mobile banking or e-wallet for payment
                   </p>
                   <div className='bg-blue-50 p-3 rounded-lg'>
                     <p className='text-blue-800 text-sm font-medium'>
@@ -278,66 +269,81 @@ const Payment = () => {
                 </div>
               </div>
 
-              {/* Upload Bukti Pembayaran */}
-              {paymentStatus !== 'paid' && (
+              {/* 📤 UPLOAD SECTION atau SUCCESS MESSAGE */}
+              {isPaid ? (
+                // ✅ SUCCESS MESSAGE
+                <div className='bg-green-50 border-2 border-green-200 rounded-xl p-6'>
+                  <div className='text-center'>
+                    <FaCheckCircle className='mx-auto h-16 w-16 text-green-500 mb-4' />
+                    <h3 className='text-xl font-bold text-green-900 mb-2'>Payment Success!</h3>
+                    <p className='text-green-700 mb-4'>
+                      Payment proof has been received and is being processed.
+                    </p>
+                    <Button
+                      text="View Order Status"
+                      to="/orders"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    />
+                  </div>
+                </div>
+              ) : (
+                // 📤 UPLOAD FORM
                 <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
-                  <h2 className='font-atemica text-xl mb-6 text-gray-900'>📤 Upload Bukti Pembayaran</h2>
+                  <h2 className='font-atemica text-xl mb-6 text-gray-900'>📤 Upload Payment Proof</h2>
                   
                   <div className='space-y-4'>
-                    {/* File Upload */}
+                    {/* 📁 FILE INPUT */}
                     <div>
                       <label className='block text-sm font-medium text-gray-700 mb-2'>
-                        Pilih File Bukti Pembayaran *
+                        Select Payment Proof File *
                       </label>
-                      <div className='relative'>
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png"
-                          onChange={handleFileChange}
-                          className='hidden'
-                          id='paymentProof'
-                          disabled={isUploading}
-                        />
-                        <label
-                          htmlFor='paymentProof'
-                          className={`flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                            paymentProof 
-                              ? 'border-green-300 bg-green-50' 
-                              : 'border-gray-300 bg-gray-50 hover:border-accent hover:bg-accent/10'
-                          } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <div className='text-center'>
-                            <FaUpload className='mx-auto h-8 w-8 text-gray-400 mb-2' />
-                            <p className='text-sm text-gray-600'>
-                              {paymentProof ? paymentProof.name : 'Klik untuk pilih file atau drag & drop'}
-                            </p>
-                            <p className='text-xs text-gray-500 mt-1'>
-                              JPG, JPEG, PNG (Max 5MB)
-                            </p>
-                          </div>
-                        </label>
-                      </div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png"
+                        onChange={handleFileSelect}
+                        className='hidden'
+                        id='paymentFile'
+                        disabled={uploading}
+                      />
+                      <label
+                        htmlFor='paymentFile'
+                        className={`flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                          paymentFile 
+                            ? 'border-green-300 bg-green-50' 
+                            : 'border-gray-300 bg-gray-50 hover:border-accent hover:bg-accent/10'
+                        } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <div className='text-center'>
+                          <FaUpload className='mx-auto h-8 w-8 text-gray-400 mb-2' />
+                          <p className='text-sm text-gray-600'>
+                            {paymentFile ? paymentFile.name : 'Click to select file'}
+                          </p>
+                          <p className='text-xs text-gray-500 mt-1'>
+                            JPG, JPEG, PNG (Max 5MB)
+                          </p>
+                        </div>
+                      </label>
                     </div>
 
-                    {/* Preview */}
-                    {paymentProofPreview && (
+                    {/* 🖼️ PREVIEW */}
+                    {filePreview && (
                       <div>
                         <label className='block text-sm font-medium text-gray-700 mb-2'>
                           Preview
                         </label>
                         <div className='relative'>
                           <img
-                            src={paymentProofPreview}
+                            src={filePreview}
                             alt="Payment Proof Preview"
                             className='w-full max-h-64 object-contain border-2 border-gray-200 rounded-lg'
                           />
                           <button
                             onClick={() => {
-                              setPaymentProof(null);
-                              setPaymentProofPreview(null);
+                              setPaymentFile(null);
+                              setFilePreview(null);
                             }}
                             className='absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600'
-                            disabled={isUploading}
+                            disabled={uploading}
                           >
                             <FaTimesCircle className='w-4 h-4' />
                           </button>
@@ -345,46 +351,28 @@ const Payment = () => {
                       </div>
                     )}
 
-                    {/* Submit Button */}
+                    {/* 🚀 SUBMIT BUTTON */}
                     <Button
-                      text={isUploading ? 'Mengirim...' : 'Kirim Bukti Pembayaran'}
-                      onClick={handleSubmitPayment}
-                      disabled={!paymentProof || isUploading}
+                      text={uploading ? 'Sending...' : 'Submit Payment Proof'}
+                      onClick={submitPayment}
+                      disabled={!paymentFile || uploading}
                       className={`w-full ${
-                        !paymentProof || isUploading 
+                        !paymentFile || uploading 
                           ? 'bg-gray-300 cursor-not-allowed' 
                           : 'bg-accent hover:bg-accent/90'
                       }`}
                     />
 
-                    {/* Instructions */}
+                    {/* 📝 INSTRUCTIONS */}
                     <div className='bg-blue-50 p-4 rounded-lg'>
-                      <h4 className='font-semibold text-blue-900 mb-2'>Petunjuk:</h4>
+                      <h4 className='font-semibold text-blue-900 mb-2'>Instructions:</h4>
                       <ul className='text-sm text-blue-800 space-y-1'>
-                        <li>• Screenshot atau foto bukti transfer</li>
-                        <li>• Pastikan nominal dan waktu transfer terlihat jelas</li>
-                        <li>• File harus berformat JPG, JPEG, atau PNG</li>
-                        <li>• Maksimal ukuran file 5MB</li>
+                        <li>• Screenshot or photo of transfer proof</li>
+                        <li>• Make sure the amount and time of transfer are clearly visible</li>
+                        <li>• File must be in JPG, JPEG, or PNG format</li>
+                        <li>• Maximum file size 5MB</li>
                       </ul>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Payment Success */}
-              {paymentStatus === 'paid' && (
-                <div className='bg-green-50 border-2 border-green-200 rounded-xl p-6'>
-                  <div className='text-center'>
-                    <FaCheckCircle className='mx-auto h-16 w-16 text-green-500 mb-4' />
-                    <h3 className='text-xl font-bold text-green-900 mb-2'>Pembayaran Berhasil!</h3>
-                    <p className='text-green-700 mb-4'>
-                      Bukti pembayaran Anda telah diterima dan sedang diproses.
-                    </p>
-                    <Button
-                      text="Lihat Status Pesanan"
-                      to="/orders"
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    />
                   </div>
                 </div>
               )}
@@ -392,18 +380,18 @@ const Payment = () => {
             </div>
           </div>
 
-          {/* Contact Info */}
+          {/* 📞 CONTACT INFO */}
           <div className='mt-8 bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6'>
-            <h3 className='font-semibold text-yellow-900 mb-2'>Butuh Bantuan?</h3>
+            <h3 className='font-semibold text-yellow-900 mb-2'>Need Help?</h3>
             <p className='text-yellow-800 text-sm mb-3'>
-              Jika Anda mengalami kesulitan dalam proses pembayaran, jangan ragu untuk menghubungi kami:
+              If you are having trouble with the payment process, please contact us:
             </p>
             <div className='flex flex-col sm:flex-row gap-4'>
               <div className='text-sm text-yellow-800'>
                 <strong>WhatsApp:</strong> 081348886432 (Eza)
               </div>
               <div className='text-sm text-yellow-800'>
-                <strong>Email:</strong> kwubem@example.com
+                <strong>Email:</strong> kwubem@gmail.com
               </div>
             </div>
           </div>

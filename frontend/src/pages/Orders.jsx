@@ -175,7 +175,7 @@ const Orders = () => {
           
           {/* User Info */}
           {user && (
-            <div className='bg-white border-2 border-gray-200 rounded-xl p-6 mb-8 shadow-sm'>
+            <div className='bg-white border-2 border-matteblack rounded-xl p-6 mb-8 shadow-matteblack'>
               <h2 className='font-atemica text-xl mb-4'>Informasi Akun</h2>
               <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                 <div>
@@ -192,18 +192,19 @@ const Orders = () => {
 
           {/* Orders List */}
           {orders.length === 0 ? (
-            <div className='bg-white border-2 border-gray-200 rounded-xl p-8 text-center shadow-sm'>
+            <div className='bg-white border-2 border-matteblack rounded-xl p-8 text-center shadow-matteblack'>
               <div className='text-6xl mb-4'>📦</div>
-              <h2 className='text-2xl font-bold text-gray-800 mb-2'>Belum Ada Pesanan</h2>
-              <p className='text-gray-600 mb-6'>Anda belum memiliki pesanan apapun. Mulai berbelanja sekarang!</p>
-              <Button text="Mulai Belanja" to="/catalog" />
+              <h2 className='text-2xl font-bold text-gray-800 mb-2'>You don't have any orders yet.</h2>
+              <p className='text-gray-600 mb-6'>Start shopping now!</p>
+              <Button text="Start Shopping" to="/catalog" />
             </div>
           ) : (
             <div className='space-y-6'>
               <div className='flex justify-between items-center'>
                 <h2 className='text-2xl font-bold text-gray-900'>
-                  Daftar Pesanan ({pagination?.totalOrders || 0})
+                  Order List ({pagination?.totalOrders || 0})
                 </h2>
+                <hr className='border-2 w-4/5 ' />
               </div>
 
               {/* Orders Grid */}
@@ -213,7 +214,7 @@ const Orders = () => {
                   const paymentInfo = getPaymentStatusInfo(order.paymentStatus);
                   
                   return (
-                    <div key={order._id} className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow'>
+                    <div key={order._id} className='bg-white border-2 rounded-xl p-6 shadow-sm hover:shadow-accent transition-shadow'>
                       <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-4'>
                         
                         {/* Order Info */}
@@ -228,24 +229,27 @@ const Orders = () => {
                               <span className={`px-3 py-1 rounded-full text-xs font-medium ${paymentInfo.color} bg-gray-100`}>
                                 {paymentInfo.label}
                               </span>
+                              {order.status === 'ready_pickup' && (
+                                <span className="text-xs text-blue-600 font-medium">Pick Up In 1 Week</span>
+                              )}
                             </div>
                           </div>
                           
                           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm'>
                             <div>
-                              <span className='text-gray-600'>Tanggal:</span>
+                              <span className='text-gray-600'>Date:</span>
                               <p className='font-medium'>{new Date(order.orderDate).toLocaleDateString('id-ID')}</p>
                             </div>
                             <div>
                               <span className='text-gray-600'>Items:</span>
-                              <p className='font-medium'>{order.items?.length || 0} produk</p>
+                              <p className='font-medium'>{order.orderItems?.length || 0} items</p>
                             </div>
                             <div>
                               <span className='text-gray-600'>Total:</span>
                               <p className='font-bold text-accent'>Rp {order.pricing?.total?.toLocaleString() || '0'}</p>
                             </div>
                             <div>
-                              <span className='text-gray-600'>Metode Bayar:</span>
+                              <span className='text-gray-600'>Payment Method:</span>
                               <p className='font-medium'>{order.paymentMethod || 'QRIS'}</p>
                             </div>
                           </div>
@@ -254,7 +258,7 @@ const Orders = () => {
                           {order.adminNotes && (
                             <div className='mt-3 p-3 bg-blue-50 rounded-lg'>
                               <p className='text-sm text-blue-800'>
-                                <strong>Catatan Admin:</strong> {order.adminNotes}
+                                <strong>Admin Notes:</strong> {order.adminNotes}
                               </p>
                             </div>
                           )}
@@ -326,11 +330,11 @@ const Orders = () => {
       {/* Order Detail Modal */}
       {showOrderDetail && selectedOrder && (
         <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
-          <div className='bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto'>
+          <div className='bg-offwhite3 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto'>
             <div className='p-6'>
               {/* Modal Header */}
               <div className='flex justify-between items-center mb-6'>
-                <h2 className='text-2xl font-bold'>Detail Pesanan #{selectedOrder.orderNumber}</h2>
+                <h2 className='text-2xl font-bold'>Order Detail #{selectedOrder.orderNumber}</h2>
                 <button
                   onClick={() => setShowOrderDetail(false)}
                   className='text-gray-500 hover:text-gray-700 text-2xl'
@@ -340,30 +344,11 @@ const Orders = () => {
               </div>
 
               {/* Order Details */}
-              <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+              <div className='grid grid-cols-1 gap-6'>
                 
-                {/* Customer Info */}
-                <div className='space-y-4'>
-                  <h3 className='font-semibold text-lg border-b pb-2'>Informasi Customer</h3>
-                  <div className='space-y-2'>
-                    <p><strong>Nama:</strong> {selectedOrder.customer?.firstName} {selectedOrder.customer?.lastName}</p>
-                    <p><strong>Email:</strong> {selectedOrder.customer?.email}</p>
-                    <p><strong>Phone:</strong> {selectedOrder.customer?.phone}</p>
-                    {selectedOrder.customer?.address && (
-                      <div>
-                        <strong>Alamat:</strong>
-                        <p className='text-sm text-gray-600 mt-1'>
-                          {selectedOrder.customer.address.street}<br/>
-                          {selectedOrder.customer.address.city}, {selectedOrder.customer.address.postalCode}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 {/* Order Info */}
                 <div className='space-y-4'>
-                  <h3 className='font-semibold text-lg border-b pb-2'>Informasi Pesanan</h3>
+                  <h3 className='font-semibold text-lg border-b pb-2'>Order Information</h3>
                   <div className='space-y-2'>
                     <p><strong>Order Date:</strong> {new Date(selectedOrder.orderDate).toLocaleString('id-ID')}</p>
                     <p><strong>Status:</strong> 
@@ -386,10 +371,10 @@ const Orders = () => {
 
               {/* Items */}
               <div className='mt-6'>
-                <h3 className='font-semibold text-lg border-b pb-2 mb-4'>Items Pesanan</h3>
+                <h3 className='font-semibold text-lg border-b pb-2 mb-4'>Order Items</h3>
                 <div className='space-y-3'>
-                  {selectedOrder.items?.map((item, index) => (
-                    <div key={index} className='flex items-center gap-4 p-3 bg-gray-50 rounded-lg'>
+                  {selectedOrder.orderItems?.map((item, index) => (
+                    <div key={index} className='flex items-center gap-4 p-3 bg-offwhite rounded-lg'>
                       {item.productImage && (
                         <img 
                           src={item.productImage} 
@@ -416,16 +401,12 @@ const Orders = () => {
               </div>
 
               {/* Pricing Summary */}
-              <div className='mt-6 bg-gray-50 p-4 rounded-lg'>
-                <h3 className='font-semibold text-lg mb-3'>Ringkasan Pembayaran</h3>
+              <div className='mt-6 bg-offwhite2 border-2 p-4 rounded-lg'>
+                <h3 className='font-semibold text-lg mb-3'>Payment Summary</h3>
                 <div className='space-y-2'>
                   <div className='flex justify-between'>
                     <span>Subtotal:</span>
                     <span>Rp {selectedOrder.pricing?.subtotal?.toLocaleString() || '0'}</span>
-                  </div>
-                  <div className='flex justify-between'>
-                    <span>Ongkir:</span>
-                    <span>Rp {selectedOrder.pricing?.shipping?.toLocaleString() || '0'}</span>
                   </div>
                   <hr />
                   <div className='flex justify-between font-bold text-lg'>
@@ -438,10 +419,10 @@ const Orders = () => {
               {/* Status History */}
               {selectedOrder.statusHistory && selectedOrder.statusHistory.length > 0 && (
                 <div className='mt-6'>
-                  <h3 className='font-semibold text-lg border-b pb-2 mb-4'>Riwayat Status</h3>
+                  <h3 className='font-semibold text-lg border-b pb-2 mb-4'>Order Status History</h3>
                   <div className='space-y-2'>
                     {selectedOrder.statusHistory.map((history, index) => (
-                      <div key={index} className='flex justify-between items-center p-2 bg-gray-50 rounded'>
+                      <div key={index} className='flex justify-between items-center p-2 bg-offwhite rounded'>
                         <span className='text-sm'>
                           {getStatusInfo(history.status).label}
                           {history.notes && ` - ${history.notes}`}

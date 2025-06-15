@@ -1,23 +1,20 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../components/Button';
 import toast, { Toaster } from 'react-hot-toast';
-import authService from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
+import { ShopContext } from '../../context/ShopContext';
 
 const SignUpPage = () => {
-  const navigate = useNavigate();
-  const [currentState, setCurrentState] = useState('Sign Up'); // Login/Signup
+  const [currentState, setCurrentState] = useState('Sign Up');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [npm, setNpm] = useState('');
   const [phone, setPhone] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, signup } = useAuth();
+  const { navigate } = useContext(ShopContext);
+  const { signup } = useAuth();
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -30,51 +27,52 @@ const SignUpPage = () => {
   };
 
   const validateNpm = (npm) => {
-    const re = /^[0-9]{10}$/;
+    const re = /^[0-9]{11}$/;
     return re.test(npm);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setIsLoading(true);
 
-    if (!email || !password || !phone || (currentState === "Sign Up" && !name)) {
-      setError("Harap isi semua bidang yang wajib diisi!");
-      toast.error("Harap isi semua kolom!");
-      return;
-    }
+    try {
+      // Validasi input
+      if (!name || !npm || !email || !phone || !password) {
+        throw new Error("Please fill all fields!");
+      }
 
-    if (!validateEmail(email)) {
-      setError("Format email tidak valid");
-      toast.error("Format email tidak valid");
-      return;
-    }
-    if (!validateNpm(npm)) {
-      throw new Error("Format NPM tidak valid");
-    }
+      if (!validateEmail(email)) {
+        throw new Error("Invalid email format");
+      }
 
-    if (phone && !validatePhone(phone)) {
-      setError("Format nomor telepon tidak valid (10-13 digit)");
-      toast.error("Format nomor telepon tidak valid (10-13 digit)");
-      return;
-    }
+      if (!validateNpm(npm)) {
+          throw new Error("Invalid NPM format (must be 11 digits)");
+      }
 
-    if (password.length < 6) {
-      setError("Password minimal 6 karakter");
-      toast.error("Password minimal 6 karakter");
-      return;
-    }
+      if (!validatePhone(phone)) {
+        throw new Error("Invalid phone number format (10-13 digits)");
+      }
 
-    // Simulasi proses login/register
-    console.log({ email, password, name, phone });
-    setSuccess(currentState === 'Login' ? 'Login berhasil!' : 'Registrasi berhasil!');
-    toast.success(currentState === 'Login' ? 'Login berhasil!' : 'Registrasi berhasil!');
-    
-    // Redirect setelah 2 detik
-    setTimeout(() => {
-      navigate('/');
-    }, 2000);
+      if (password.length < 6) {
+        throw new Error("Password must be at least 6 characters");
+      }
+
+      // Proses signup
+      await signup(name, npm, email, phone, password);
+      
+      toast.success('Registration successful! Welcome!');
+
+      // Redirect to home after successful signup
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
+
+    } catch (error) {
+      const errorMessage = error.message || error || 'An error occurred during registration';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -87,7 +85,7 @@ const SignUpPage = () => {
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
         </svg>
-        Kembali ke Beranda
+        Back to Home
       </button>
 
       <form className='flex flex-col w-full max-w-2xl m-auto mt-15 gap-4 justify-center items-center mb-20' onSubmit={handleSubmit}>
@@ -106,6 +104,7 @@ const SignUpPage = () => {
                 onChange={(e) => setName(e.target.value)} 
                 className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
                 placeholder='ex: Yves Saint Laurent' 
+                disabled={isLoading}
               />
             </div>
           )}
@@ -118,6 +117,7 @@ const SignUpPage = () => {
               onChange={(e) => setNpm(e.target.value)} 
               className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
               placeholder='ex: 2208xxx' 
+              disabled={isLoading}
             />
           </div>
           {/* <div className="w-full">
@@ -138,6 +138,7 @@ const SignUpPage = () => {
               onChange={(e) => setEmail(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
               placeholder='example@email.com' 
+              disabled={isLoading}
             />
           </div>
           <div className="w-full">
@@ -148,6 +149,7 @@ const SignUpPage = () => {
               onChange={(e) => setPhone(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
               placeholder='08xxxxxxxxxx' 
+              disabled={isLoading}
             />
           </div>
           <div className="w-full">
@@ -158,6 +160,7 @@ const SignUpPage = () => {
               onChange={(e) => setPassword(e.target.value)} 
               className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
               placeholder='Minimal 6 characters' 
+              disabled={isLoading}
             />
           </div>
           
@@ -168,20 +171,21 @@ const SignUpPage = () => {
           )}
 
           <Button 
-            text={currentState === 'Login' ? 'Login' : 'Sign Up'} 
+            text={isLoading ? 'Signing Up...' : 'Sign Up'} 
             type="submit"
-            className={`w-full text-center py-3 ${currentState === 'Sign Up' ? 'mt-6' : ''}`}
+            className={`w-full text-center py-3 mt-6 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isLoading}
           />
 
           {/* Toggle Login/Sign Up */}
-          <p className="flex gap-1 justify-start font-display text-sm text-gray-500 hover:text-gray-700">
-            <p>Already have an account? </p>
+          <div className="flex gap-1 justify-start font-display text-sm text-gray-500 hover:text-gray-700">
+            <span>Already have an account? </span>
             <Link to='/login'>
               <span className="text-accent cursor-pointer hover:text-amber-700 hover:underline font-bold"  onClick={() => setCurrentState(currentState === 'Login' ? 'Sign Up' : 'Login')}>
                 Login
               </span>
             </Link> 
-          </p>
+          </div>
 
         </div>
       </form>

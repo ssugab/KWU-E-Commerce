@@ -6,8 +6,7 @@ import { API_ENDPOINTS } from '../config/api';
 const AuthContext = createContext();
 
 
-
-export const useAuth = () => {
+const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -55,17 +54,24 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       const token = authService.getToken();
+      console.log('🔍 AuthContext - Checking auth status, token:', token ? 'exists' : 'not found');
+      
       if (token) {
         try {
+          console.log('🔄 AuthContext - Setting authenticated true and fetching profile...');
           setIsAuthenticated(true);
           await fetchUserProfile();
         } catch (error) {
-          console.error('Error fetching user profile:', error);
+          console.error('❌ AuthContext - Error fetching user profile:', error);
           // Jika error, hapus token yang invalid
           authService.logout();
           setIsAuthenticated(false);
           setUser(null);
         }
+      } else {
+        console.log('⚠️ AuthContext - No token found, setting authenticated false');
+        setIsAuthenticated(false);
+        setUser(null);
       }
       setLoading(false);
     };
@@ -78,6 +84,12 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.get(API_ENDPOINTS.USER.PROFILE);
       if (response.data.success) {
         setUser(response.data);
+        
+        // Simpan email user ke localStorage untuk fallback di payment
+        if (response.data.email) {
+          localStorage.setItem('userEmail', response.data.email);
+        }
+        
         return response.data;
       }
     } catch (error) {
@@ -87,21 +99,27 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
+    console.log('🔄 AuthContext - Logging in...');
     const response = await authService.login(email, password);
+    console.log('✅ AuthContext - Login successful, setting authenticated true');
     setIsAuthenticated(true);
     
     // Fetch user profile setelah login berhasil
     await fetchUserProfile();
+    console.log('✅ AuthContext - User profile fetched after login');
     
     return response;
   };
 
   const signup = async (name, npm, email, phone, password) => {
+    console.log('🔄 AuthContext - Signing up...');
     const response = await authService.signup(name, npm, email, phone, password);
+    console.log('✅ AuthContext - Signup successful, setting authenticated true');
     setIsAuthenticated(true);
     
     // Fetch user profile setelah signup berhasil
     await fetchUserProfile();
+    console.log('✅ AuthContext - User profile fetched after signup');
     
     return response;
   };
@@ -136,6 +154,9 @@ export const AuthProvider = ({ children }) => {
     authService.logout();
     setIsAuthenticated(false);
     setUser(null);
+    
+    // Bersihkan email user dari localStorage
+    localStorage.removeItem('userEmail');
   };
 
   // Function untuk refresh user data
@@ -163,3 +184,6 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 }; 
+
+export default AuthProvider;
+export { useAuth };

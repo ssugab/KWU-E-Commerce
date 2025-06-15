@@ -41,14 +41,14 @@ const Checkout = () => {
   useEffect(() => {
     // Tunggu sampai loading selesai sebelum redirect
     if (!loading && !isAuthenticated) {
-      toast.error('Silakan login untuk melihat checkout');
+      toast.error('Please login to checkout');
       navigate('/login');
     }
   }, [isAuthenticated, loading, navigate])
 
   const handleCheckout = async () => {
     if (!user) {
-      toast.error('Data user tidak ditemukan. Silakan login ulang.');
+      toast.error('User data not found. Please login again.');
       return;
     }
 
@@ -58,7 +58,7 @@ const Checkout = () => {
       const subtotal = getCartAmount();
 
       if (subtotal <= 0) {
-        toast.error('Total pesanan tidak valid');
+        toast.error('Invalid order total');
         return;
       }
 
@@ -113,17 +113,17 @@ const Checkout = () => {
             </div>
             <h2 className='text-2xl font-bold text-gray-900 mb-2'>Keranjang Anda Kosong</h2>
             <p className='text-gray-600 mb-6'>
-              Silakan tambahkan produk ke keranjang terlebih dahulu sebelum melakukan checkout.
+              Please add products to your cart before checking out.
             </p>
           </div>
           <div className='space-y-3'>
             <Button
-              text='Kembali ke Katalog'
+              text='Back to Catalog'
               onClick={() => navigate('/catalog')}
               className='w-full bg-accent hover:bg-accent/90 text-matteblack border-accent'
             />
             <Button
-              text='Lihat Keranjang'
+              text='View Cart'
               onClick={() => navigate('/cart')}
               className='w-full bg-white hover:bg-gray-50 text-gray-700 border-gray-300'
             />
@@ -158,17 +158,17 @@ const Checkout = () => {
             <div className='lg:col-span-2 space-y-6'>
               
               {/* Customer Information - Display Only */}
-              <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
+              <div className='bg-white border-2 shadow-matteblack rounded-xl p-6 shadow-sm'>
                 <h2 className='font-atemica text-xl mb-6 text-gray-900 flex items-center gap-2'>
                   <FaUser className="w-5 h-5" />
-                  <span>Informasi Pelanggan</span>
+                  <span>Customer Information</span>
                 </h2>
                 
                 <div className='space-y-4'>
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                     <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
                       <label className='block text-sm font-medium text-gray-600 mb-1'>
-                        Nama Lengkap
+                        Full Name
                       </label>
                       <p className='text-gray-900 font-medium'>{user?.name || '-'}</p>
                     </div>
@@ -193,7 +193,7 @@ const Checkout = () => {
                     <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
                       <label className='block text-sm font-medium text-gray-600 mb-1 flex items-center gap-2'>
                         <FaPhone className="w-3 h-3" />
-                        Nomor Telepon
+                        Phone Number
                       </label>
                       <p className='text-gray-900 font-medium'>{user?.phone || '-'}</p>
                     </div>
@@ -201,7 +201,7 @@ const Checkout = () => {
 
                   <div className='mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200'>
                     <p className='text-sm text-blue-800'>
-                      💡 <strong>Info:</strong> Data di atas diambil dari profil akun Anda. Jika perlu mengubah, silakan update di halaman profil.
+                      💡 <strong>Info:</strong> The data above is taken from your account profile. If you need to change, please update on the profile page.
                     </p>
                   </div>
                 </div>

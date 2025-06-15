@@ -107,10 +107,8 @@ export const useCheckout = () => {
     setIsLoading(true);
     
     try {
-      // Format data order
       const orderData = formatOrderData(userData, cartItems, subtotal);
       
-      // Validasi data
       const validation = validateOrderData(orderData);
       if (!validation.isValid) {
         throw new Error(validation.message);
@@ -121,10 +119,10 @@ export const useCheckout = () => {
       // Get token for authentication
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('Token tidak ditemukan. Silakan login ulang.');
+        throw new Error('Token not found. Please login again.');
       }
 
-      // Kirim ke backend dengan retry mechanism dan auth headers
+      // send to backend with retry mechanism and auth headers
       const response = await retryRequest(async () => {
         return await axios.post(API_ENDPOINTS.ORDERS.CREATE, orderData, {
           headers: {
@@ -138,9 +136,8 @@ export const useCheckout = () => {
         const order = response.data.order;
         setCurrentOrder(order);
         
-        // Simpan order ID ke session storage untuk payment
+        // Save order ID to session storage for payment
         sessionStorage.setItem('currentOrderId', order._id);
-        sessionStorage.setItem('currentOrderNumber', order.orderNumber);
         sessionStorage.setItem('orderCreatedAt', new Date().toISOString());
         
         console.log('✅ Order created successfully:', order);
@@ -149,27 +146,26 @@ export const useCheckout = () => {
           success: true,
           order,
           orderId: order._id,
-          orderNumber: order.orderNumber,
-          message: 'Pesanan berhasil dibuat'
+          message: 'Order created successfully'
         };
       } else {
-        throw new Error(response.data.message || 'Gagal membuat pesanan');
+        throw new Error(response.data.message || 'Failed to create order');
       }
 
     } catch (error) {
       console.error('❌ Error creating order:', error);
       
       // Improved error messaging
-      let errorMessage = 'Terjadi kesalahan saat membuat pesanan';
+      let errorMessage = 'An error occurred while creating the order';
       
       if (error.code === 'ECONNABORTED') {
-        errorMessage = 'Koneksi timeout. Silakan coba lagi.';
+        errorMessage = 'Connection timeout. Please try again.';
       } else if (error.response?.status === 401) {
-        errorMessage = 'Sesi telah berakhir. Silakan login ulang.';
+        errorMessage = 'Session expired. Please login again.';
       } else if (error.response?.status === 400) {
-        errorMessage = error.response.data?.message || 'Data pesanan tidak valid';
+        errorMessage = error.response.data?.message || 'Invalid order data';
       } else if (error.response?.status === 500) {
-        errorMessage = 'Terjadi kesalahan server. Silakan coba lagi.';
+        errorMessage = 'Server error. Please try again.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -356,14 +352,15 @@ export const useCheckout = () => {
   const clearCurrentOrder = useCallback(() => {
     setCurrentOrder(null);
     sessionStorage.removeItem('currentOrderId');
-    sessionStorage.removeItem('currentOrderNumber');
     sessionStorage.removeItem('orderCreatedAt');
   }, []);
 
-  // Get current order from session dengan validasi expiry
+  // Get current order from session dengan validasi expiry dan fallback
   const getCurrentOrderFromSession = useCallback(async () => {
     const orderId = sessionStorage.getItem('currentOrderId');
     const orderCreatedAt = sessionStorage.getItem('orderCreatedAt');
+    
+    console.log('🔍 Checking session - Order ID:', orderId);
     
     if (orderId) {
       // Check if order session is not too old (24 hours)
@@ -378,18 +375,62 @@ export const useCheckout = () => {
           return null;
         }
       }
-      
+
       const result = await getOrder(orderId);
+      console.log('🔍 Get order result:', result);
+      
       if (result.success) {
+        console.log('✅ Order found in database:', result.order);
         setCurrentOrder(result.order);
         return result.order;
       } else {
-        // Clear invalid order from session
+        // Order tidak ditemukan di database, bersihkan session
+        console.log('❌ Order not found in database, clearing session...');
         clearCurrentOrder();
+        // Lanjutkan ke fallback logic
       }
     }
+    
+    // Fallback: Jika tidak ada order di session atau order tidak valid, coba ambil order terbaru user
+    console.log('🔄 No valid order in session, trying to get latest order...');
+    
+    // Cek apakah ada user yang login
+    const userEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail');
+    if (userEmail) {
+      try {
+        console.log('📧 Searching orders for email:', userEmail);
+        const result = await getOrdersByEmail(userEmail, 1, 1); // Ambil 1 order terbaru
+        
+        if (result.success && result.orders && result.orders.length > 0) {
+          const latestOrder = result.orders[0];
+          console.log('📋 Latest order found:', latestOrder._id, 'Payment status:', latestOrder.paymentStatus);
+          
+          // Hanya ambil order yang statusnya pending payment
+          if (latestOrder.paymentStatus === 'pending') {
+            console.log('✅ Found latest pending order:', latestOrder._id);
+            
+            // Simpan ke session untuk next time
+            sessionStorage.setItem('currentOrderId', latestOrder._id);
+            sessionStorage.setItem('orderCreatedAt', latestOrder.orderDate);
+            
+            setCurrentOrder(latestOrder);
+            return latestOrder;
+          } else {
+            console.log('⚠️ Latest order is not pending payment:', latestOrder.paymentStatus);
+          }
+        } else {
+          console.log('📭 No orders found for user');
+        }
+      } catch (error) {
+        console.error('❌ Error getting latest order:', error);
+      }
+    } else {
+      console.log('❌ No user email found in storage');
+    }
+    
+    console.log('❌ No valid order found');
     return null;
-  }, [getOrder, clearCurrentOrder]);
+  }, [getOrder, clearCurrentOrder, getOrdersByEmail]);
 
   // Get order statistics (helper function)
   const getOrderStats = useCallback(async (email) => {

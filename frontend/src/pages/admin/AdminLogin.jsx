@@ -168,14 +168,6 @@ const AdminLogin = () => {
           </div>
         </div>
 
-        {/* Back to Home */}
-        <div className="text-center mt-6">
-          <Button 
-            text="← Back to Home" 
-            to="/" 
-            className="bg-gray-200 hover:bg-gray-300 border-gray-300"
-          />
-        </div>
       </div>
     </div>
   )

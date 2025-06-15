@@ -57,7 +57,7 @@ const CheckOutSummary = ({ cartData, isProcessing }) => {
         </div>
       </div>
 
-      {/* Pickup Information */}
+      {/* Pickup Information 
       <div className='bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6'>
         <h3 className='font-semibold text-blue-900 mb-2 flex items-center gap-2'>
           <FaTruck className="w-4 h-4" />
@@ -70,25 +70,28 @@ const CheckOutSummary = ({ cartData, isProcessing }) => {
         </div>
       </div>
 
-      {/* Security & Contact Info */}
-      <div className='space-y-3 mb-6'>
-        {/* Security Notice */}
+      {/* Security & Contact Info 
+
+        {/* Security Notice 
         <div className='flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200'>
           <FaCheckCircle className="w-4 h-4 text-green-600" />
           <span className='text-sm text-green-800'>
             Secure checkout guaranteed
           </span>
-        </div>
+        </div> 
 
+        
+      </div> */}
+      <hr className='border-gray-200 mb-2' />
         {/* WhatsApp Contact */}
+        <div className='space-y-3 mb-2'>
         <div className='flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200'>
           <FaWhatsapp className="w-4 h-4 text-green-600" />
           <span className='text-sm text-gray-700'>
             Help via WhatsApp: 081348886432
           </span>
         </div>
-      </div>
-
+        </div>
       {/* Processing Indicator */}
       {isProcessing && (
         <div className='w-full p-4 bg-accent/10 border border-accent rounded-lg mb-4'>

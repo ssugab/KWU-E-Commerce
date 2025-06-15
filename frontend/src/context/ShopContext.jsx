@@ -4,11 +4,12 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import cartService from "../services/cartService";
 import { useAuth } from "./AuthContext";
+import { API_ENDPOINTS } from "../config/api";
+
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState({});
   const [category] = useState([]);
@@ -17,14 +18,18 @@ const ShopContextProvider = (props) => {
 
   // Load cart from database when user logged in
   const loadCartFromDatabase = async () => {
+    console.log('🔍 LoadCartFromDatabase - isAuthenticated:', isAuthenticated);
+    console.log('🔍 LoadCartFromDatabase - products.length:', products.length);
+    
     if (!isAuthenticated) {
-      console.log('User not authenticated, skipping cart load');
+      console.log('⚠️ User not authenticated, skipping cart load');
       return;
     }
 
     try {
       console.log('🔄 Loading cart from database...');
       const response = await cartService.getCart();
+      console.log('📦 Cart response from database:', response);
       
       if (response.success && response.cart && response.cart.products) {
         // Convert database cart format ke local cart format
@@ -40,13 +45,14 @@ const ShopContextProvider = (props) => {
           loadedCart[productId][size] = quantity;
         });
 
+        console.log('✅ Cart loaded from database:', loadedCart);
         setCart(loadedCart);
       } else {
         console.log('📭 No cart found in database or empty cart');
         setCart({}); // Set empty cart if no database cart
       }
     } catch (error) {
-      console.log('🚨 Error loading cart from database:', error);
+      console.error('🚨 Error loading cart from database:', error);
       // Don't show error toast, just log - cart akan tetap menggunakan localStorage
     }
   };
@@ -68,16 +74,24 @@ const ShopContextProvider = (props) => {
     setCart(cartItems);
 
     // Sync ke database jika user login
+    console.log('🔍 AddToCart - isAuthenticated:', isAuthenticated);
+    console.log('🔍 AddToCart - Token from localStorage:', localStorage.getItem('token') ? 'exists' : 'not found');
+    
     if (isAuthenticated) {
       try {
-        await cartService.addToCart(productId, size, quantity);
-        console.log('✅ Successfully added to database cart');
+        console.log('🔄 Attempting to add to database cart...');
+        const response = await cartService.addToCart(productId, size, quantity);
+        console.log('✅ Successfully added to database cart:', response);
+
       } catch (error) {
-        console.log('🚨 Error adding to database cart:', error);
+        console.error('🚨 Error adding to database cart:', error);
         toast.error('Gagal menyimpan ke cart. Data tersimpan sementara.');
       }
     } else {
-      console.log('Produk ditambahkan ke cart lokal. Login untuk menyimpan permanen.');
+      console.log('⚠️ User not authenticated - cart saved locally only');
+      toast('Produk ditambahkan ke cart lokal. Login untuk menyimpan permanen.', {
+        icon: 'ℹ️'
+      });
     }
   };
 
@@ -188,20 +202,16 @@ const ShopContextProvider = (props) => {
 
   const getProducts = async () => {
     try {
-      console.log('🔄 Fetching products from:', `${backendUrl}/api/catalog/`);
-      // console.log('📍 Backend URL:', backendUrl);
+      console.log('🔄 Fetching products from:', API_ENDPOINTS.CATALOG.GET_ALL);
       
-      const response = await axios.get(`${backendUrl}/api/catalog/`);
-      // console.log('📦 Response received:', response);
-      //console.log('📊 Response data:', response.data);
+      const response = await axios.get(API_ENDPOINTS.CATALOG.GET_ALL);
       
       if(response.data.success){
         console.log('✅ Success! Products data:', response.data.data);
         
-        // Map _id to id for consistency
         const mappedData = response.data.data.map(item => ({
           ...item,
-          id: item._id // Add id field that is the same as _id
+          id: item._id
         }));
         
         setProducts(mappedData);
@@ -247,7 +257,7 @@ const ShopContextProvider = (props) => {
     removeFromCart, updateQuantity, clearCart,
     loadCartFromDatabase,
 
-    backendUrl, navigate
+    navigate
   };
 
   return (
