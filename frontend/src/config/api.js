@@ -25,13 +25,17 @@ export const API_ENDPOINTS = {
   },
   ORDERS: {
     CREATE: `${API_URL}/orders/create`,
+    GET: (id) => `${API_URL}/orders/${id}`,
     GET_ALL: `${API_URL}/orders`,
-    GET_ONE: (id) => `${API_URL}/orders/${id}`,
+    GET_MY_ORDERS: `${API_URL}/orders/my-orders`,
     GET_BY_EMAIL: (email) => `${API_URL}/orders/user/${email}`,
     UPDATE_STATUS: (id) => `${API_URL}/orders/${id}/status`,
     UPDATE_PAYMENT: (id) => `${API_URL}/orders/${id}/payment`,
     UPLOAD_PROOF: (id) => `${API_URL}/orders/${id}/upload-proof`,
     CANCEL: (id) => `${API_URL}/orders/${id}/cancel`,
     DELETE: (id) => `${API_URL}/orders/${id}`,
+    MARK_READY_PICKUP: (id) => `${API_URL}/orders/${id}/ready-pickup`,
+    GET_NEW_COUNT: `${API_URL}/orders/admin/new-count`,
+    MARK_NOTIFIED: `${API_URL}/orders/admin/mark-notified`
   }
 };

@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
       if (response.data.success) {
         setUser(response.data);
         
-        // Simpan email user ke localStorage untuk fallback di payment
+        // Save email user to localStorage for fallback in payment
         if (response.data.email) {
           localStorage.setItem('userEmail', response.data.email);
         }
@@ -101,6 +101,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     console.log('🔄 AuthContext - Logging in...');
     const response = await authService.login(email, password);
+
     console.log('✅ AuthContext - Login successful, setting authenticated true');
     setIsAuthenticated(true);
     
@@ -150,16 +151,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    authService.logout();
-    setIsAuthenticated(false);
-    setUser(null);
-    
-    // Bersihkan email user dari localStorage
-    localStorage.removeItem('userEmail');
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsAuthenticated(false);
+      setUser(null);
+      
+      // Clear user email from localStorage
+      localStorage.removeItem('userEmail');
+    }
   };
 
-  // Function untuk refresh user data
+  // Function to refresh user data
   const refreshUser = async () => {
     if (isAuthenticated) {
       await fetchUserProfile();

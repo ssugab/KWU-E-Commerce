@@ -3,16 +3,13 @@ import { API_ENDPOINTS } from '../config/api';
 import authService from './authService';
 
 const cartService = {
-  // Helper function untuk mendapatkan header dengan token
-  getAuthHeaders: () => {
-    const token = authService.getToken();
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-  },
+  // Helper untuk auth headers
+  getAuthHeaders: () => ({
+    'Authorization': `Bearer ${authService.getToken()}`,
+    'Content-Type': 'application/json'
+  }),
 
-  // Mendapatkan cart user
+  // Get cart
   getCart: async () => {
     try {
       const response = await axios.get(API_ENDPOINTS.CART.GET, {
@@ -20,46 +17,39 @@ const cartService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error getting cart:', error);
-      throw error.response?.data?.message || error.message;
+      throw error.response?.data?.message || 'Gagal mengambil cart';
     }
   },
 
-  // Menambah item ke cart
+  // Add to cart
   addToCart: async (productId, size, quantity) => {
     try {
       const response = await axios.post(API_ENDPOINTS.CART.ADD, {
-        productId,
-        size,
-        quantity
+        productId, size, quantity
       }, {
         headers: cartService.getAuthHeaders()
       });
       return response.data;
     } catch (error) {
-      console.error('Error adding to cart:', error);
-      throw error.response?.data?.message || error.message;
+      throw error.response?.data?.message || 'Gagal menambah ke cart';
     }
   },
 
-  // Update quantity item di cart
+  // Update cart quantity
   updateCartQuantity: async (productId, size, quantity) => {
     try {
       const response = await axios.put(API_ENDPOINTS.CART.UPDATE, {
-        productId,
-        size,
-        quantity
+        productId, size, quantity
       }, {
         headers: cartService.getAuthHeaders()
       });
       return response.data;
     } catch (error) {
-      console.error('Error updating cart:', error);
-      throw error.response?.data?.message || error.message;
+      throw error.response?.data?.message || 'Gagal update cart';
     }
   },
 
-  // Menghapus item dari cart
+  // Remove from cart
   removeFromCart: async (productId, size) => {
     try {
       const response = await axios.delete(API_ENDPOINTS.CART.REMOVE, {
@@ -71,12 +61,11 @@ const cartService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error removing from cart:', error);
-      throw error.response?.data?.message || error.message;
+      throw error.response?.data?.message || error.message || 'Failed to remove from cart';
     }
   },
 
-  // Menghapus semua item dari cart
+  // Clear cart
   clearCart: async () => {
     try {
       const response = await axios.delete(API_ENDPOINTS.CART.CLEAR, {
@@ -84,8 +73,7 @@ const cartService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error clearing cart:', error);
-      throw error.response?.data?.message || error.message;
+      throw error.response?.data?.message || error.message || 'Failed to clear cart';
     }
   }
 };

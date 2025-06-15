@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { assets } from '../assets/assets';
 import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const Navbar = () => {
 
@@ -14,8 +15,11 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
-    window.location.reload();
+    toast.success('Logout successful');
+    setTimeout (() => {
+      navigate('/');
+      window.location.reload();
+    }, 2000);
   };
 
   const handleLogin = () => {

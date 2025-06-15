@@ -63,19 +63,17 @@ const Orders = () => {
     setShowOrderDetail(true);
   };
 
-  // Handle cancel order
+  // Handle cancel order - Simplified
   const handleCancelOrder = async (orderId, orderNumber) => {
-    if (!confirm(`Apakah Anda yakin ingin membatalkan pesanan ${orderNumber}?`)) {
-      return;
-    }
+    if (!confirm(`Yakin batalkan pesanan ${orderNumber}?`)) return;
 
     setCancelling(orderId);
     try {
       const result = await cancelOrder(orderId, 'Dibatalkan oleh customer');
       
       if (result.success) {
-        toast.success('Pesanan berhasil dibatalkan');
-        loadOrders(); // Reload orders
+        toast.success('Order successfully cancelled');
+        loadOrders();
       } else {
         toast.error(result.message || 'Gagal membatalkan pesanan');
       }
@@ -230,10 +228,36 @@ const Orders = () => {
                                 {paymentInfo.label}
                               </span>
                               {order.status === 'ready_pickup' && (
-                                <span className="text-xs text-blue-600 font-medium">Pick Up In 1 Week</span>
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium animate-pulse">
+                                  Pickup dalam 7 hari!
+                                </span>
                               )}
                             </div>
                           </div>
+                          
+                          {/* Ready Pickup Notification */}
+                          {order.status === 'ready_pickup' && (
+                            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-start gap-3">
+                                <div className="text-green-600 text-xl">🎉</div>
+                                <div className="flex-1">
+                                  <p className="text-green-800 font-bold mb-1">Pesanan Siap Diambil!</p>
+                                  <p className="text-green-700 text-sm mb-3">
+                                    Pesanan Anda sudah siap untuk diambil. Silakan datang ke lokasi pickup.
+                                  </p>
+                                  <div className="text-sm text-green-600 space-y-1">
+                                    <p className="font-medium">📍 Lokasi Pickup:</p>
+                                    <p>BEM Fakultas & Badan/UKM Keceh, Gn. Anyar, Surabaya</p>
+                                    <p>📞 WA: 081348886432 (Eza)</p>
+                                    <p>🕒 Senin-Jumat: 09:00-17:00</p>
+                                    <p className="mt-2 text-orange-700 font-medium bg-orange-100 px-2 py-1 rounded">
+                                      ⚠️ Harap diambil dalam 7 hari sebelum expired
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           
                           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm'>
                             <div>

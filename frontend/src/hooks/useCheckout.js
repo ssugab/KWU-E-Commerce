@@ -2,75 +2,46 @@ import { useState, useCallback } from 'react';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 
-// Configure axios defaults untuk timeout dan retry
-axios.defaults.timeout = 30000; // 30 seconds timeout
+// Configure axios timeout
+axios.defaults.timeout = 15000; // 15 seconds
 
 export const useCheckout = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
 
-  // Utility function untuk retry failed requests
-  const retryRequest = useCallback(async (requestFn, maxRetries = 3, delay = 1000) => {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        return await requestFn();
-      } catch (error) {
-        console.warn(`❌ Request attempt ${attempt} failed:`, error.message);
-        
-        if (attempt === maxRetries) {
-          throw error;
-        }
-        
-        // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, delay * attempt));
-      }
-    }
-  }, []);
+  // Helper function untuk get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
 
-  // Validasi data order sebelum dikirim ke backend
+  // Simple validation
   const validateOrderData = useCallback((orderData) => {
-    const errors = [];
-
-    // Validasi customer info
-    if (!orderData.customer?.name?.trim()) {
-      errors.push('Nama wajib diisi');
+    const { customer, items, pricing } = orderData;
+    
+    if (!customer?.name || !customer?.email || !customer?.phone) {
+      return { isValid: false, message: 'Data customer tidak lengkap' };
     }
-    if (!orderData.customer?.email?.trim()) {
-      errors.push('Email wajib diisi');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(orderData.customer.email)) {
-      errors.push('Format email tidak valid');
+    
+    if (!items?.length) {
+      return { isValid: false, message: 'Keranjang kosong' };
     }
-    if (!orderData.customer?.phone?.trim()) {
-      errors.push('Nomor telepon wajib diisi');
-    } else if (!/^[0-9+\-\s()]{10,}$/.test(orderData.customer.phone)) {
-      errors.push('Format nomor telepon tidak valid (minimal 10 digit)');
-    }
-
-    // Validasi items
-    if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
-      errors.push('Keranjang kosong atau tidak valid');
-    }
-
+    
     // Validasi setiap item
-    orderData.items?.forEach((item, index) => {
+    items?.forEach((item, index) => {
       if (!item.productId) {
-        errors.push(`Item ${index + 1}: Product ID tidak valid`);
+        return { isValid: false, message: `Item ${index + 1}: Product ID tidak valid` };
       }
       if (!item.quantity || item.quantity < 1) {
-        errors.push(`Item ${index + 1}: Quantity tidak valid`);
+        return { isValid: false, message: `Item ${index + 1}: Quantity tidak valid` };
       }
     });
 
-    // Validasi pricing
-    if (!orderData.pricing || orderData.pricing.total <= 0) {
-      errors.push('Total pesanan tidak valid');
+    if (!pricing?.total || pricing.total <= 0) {
+      return { isValid: false, message: 'Total tidak valid' };
     }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-      message: errors.length > 0 ? errors[0] : 'Data valid'
-    };
+    
+    return { isValid: true, message: 'Valid' };
   }, []);
 
   // Format data untuk dikirim ke backend
@@ -102,41 +73,30 @@ export const useCheckout = () => {
     };
   }, []);
 
-  // Buat order baru dengan retry mechanism
+  // Create order - Simplified
   const createOrder = useCallback(async (userData, cartItems, subtotal) => {
     setIsLoading(true);
     
     try {
       const orderData = formatOrderData(userData, cartItems, subtotal);
-      
       const validation = validateOrderData(orderData);
+      
       if (!validation.isValid) {
         throw new Error(validation.message);
       }
-
-      console.log('📤 Sending order data:', orderData);
 
       // Get token for authentication
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Token not found. Please login again.');
       }
-
-      // send to backend with retry mechanism and auth headers
-      const response = await retryRequest(async () => {
-        return await axios.post(API_ENDPOINTS.ORDERS.CREATE, orderData, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+      const response = await axios.post(API_ENDPOINTS.ORDERS.CREATE, orderData, {
+        headers: getAuthHeaders()
       });
 
       if (response.data.success) {
         const order = response.data.order;
         setCurrentOrder(order);
-        
-        // Save order ID to session storage for payment
         sessionStorage.setItem('currentOrderId', order._id);
         sessionStorage.setItem('orderCreatedAt', new Date().toISOString());
         
@@ -152,46 +112,23 @@ export const useCheckout = () => {
         throw new Error(response.data.message || 'Failed to create order');
       }
 
+      
     } catch (error) {
-      console.error('❌ Error creating order:', error);
-      
-      // Improved error messaging
-      let errorMessage = 'An error occurred while creating the order';
-      
-      if (error.code === 'ECONNABORTED') {
-        errorMessage = 'Connection timeout. Please try again.';
-      } else if (error.response?.status === 401) {
-        errorMessage = 'Session expired. Please login again.';
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response.data?.message || 'Invalid order data';
-      } else if (error.response?.status === 500) {
-        errorMessage = 'Server error. Please try again.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
       return {
         success: false,
-        message: errorMessage,
-        error: error.response?.data || error
+        message: error.response?.data?.message || error.message || 'Failed to create order'
       };
     } finally {
       setIsLoading(false);
     }
-  }, [formatOrderData, validateOrderData, retryRequest]);
+  }, [formatOrderData, validateOrderData]);
 
-  // Get order by ID dengan error handling yang lebih baik
+  // Get order by ID
   const getOrder = useCallback(async (orderId) => {
-    if (!orderId) {
-      return {
-        success: false,
-        message: 'Order ID tidak valid'
-      };
-    }
+    if (!orderId) return { success: false, message: 'Order ID tidak valid' };
 
     try {
-      const response = await axios.get(API_ENDPOINTS.ORDERS.GET_ONE(orderId));
-      
+      const response = await axios.get(API_ENDPOINTS.ORDERS.GET(orderId));
       if (response.data.success) {
         return {
           success: true,
@@ -201,24 +138,13 @@ export const useCheckout = () => {
         throw new Error(response.data.message);
       }
     } catch (error) {
-      console.error('❌ Error fetching order:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || error.message || 'Gagal mengambil data pesanan'
-      };
+      throw error.response?.data?.message || error.message || 'Failed to get order';
     }
   }, []);
 
   // Get orders by email (untuk user) dengan pagination yang lebih baik
   const getOrdersByEmail = useCallback(async (email, page = 1, limit = 10) => {
-    if (!email) {
-      return {
-        success: false,
-        message: 'Email tidak valid',
-        orders: [],
-        pagination: null
-      };
-    }
+    if (!email) return { success: false, message: 'Email tidak valid', orders: [] };
 
     try {
       const response = await axios.get(
@@ -247,19 +173,12 @@ export const useCheckout = () => {
 
   // Update order status (untuk admin) dengan validasi
   const updateOrderStatus = useCallback(async (orderId, status, adminNotes = '') => {
-    if (!orderId || !status) {
-      return {
-        success: false,
-        message: 'Parameter tidak lengkap'
-      };
-    }
+    if (!orderId || !status) return { success: false, message: 'Parameter tidak lengkap' };
 
     try {
       const response = await axios.put(API_ENDPOINTS.ORDERS.UPDATE_STATUS(orderId), {
         status,
-        adminNotes: adminNotes.trim(),
-        updatedBy: 'admin',
-        updatedAt: new Date().toISOString()
+        adminNotes: adminNotes.trim()
       });
       
       if (response.data.success) {
@@ -282,18 +201,12 @@ export const useCheckout = () => {
 
   // Update payment status dengan validasi
   const updatePaymentStatus = useCallback(async (orderId, paymentStatus, paymentMethod = null) => {
-    if (!orderId || !paymentStatus) {
-      return {
-        success: false,
-        message: 'Parameter tidak lengkap'
-      };
-    }
+    if (!orderId || !paymentStatus) return { success: false, message: 'Parameter tidak lengkap' };
 
     try {
       const response = await axios.put(API_ENDPOINTS.ORDERS.UPDATE_PAYMENT(orderId), {
         paymentStatus,
-        paymentMethod,
-        paymentUpdatedAt: new Date().toISOString()
+        paymentMethod
       });
       
       if (response.data.success) {
@@ -316,12 +229,7 @@ export const useCheckout = () => {
 
   // Cancel order dengan alasan
   const cancelOrder = useCallback(async (orderId, reason = '') => {
-    if (!orderId) {
-      return {
-        success: false,
-        message: 'Order ID tidak valid'
-      };
-    }
+    if (!orderId) return { success: false, message: 'Order ID tidak valid' };
 
     try {
       const response = await axios.put(API_ENDPOINTS.ORDERS.CANCEL(orderId), {
@@ -348,46 +256,26 @@ export const useCheckout = () => {
     }
   }, []);
 
-  // Clear current order dengan cleanup yang lebih baik
+  // Clear current order
   const clearCurrentOrder = useCallback(() => {
     setCurrentOrder(null);
     sessionStorage.removeItem('currentOrderId');
     sessionStorage.removeItem('orderCreatedAt');
   }, []);
 
-  // Get current order from session dengan validasi expiry dan fallback
+  // Get current order from session - Simplified
   const getCurrentOrderFromSession = useCallback(async () => {
     const orderId = sessionStorage.getItem('currentOrderId');
-    const orderCreatedAt = sessionStorage.getItem('orderCreatedAt');
-    
-    console.log('🔍 Checking session - Order ID:', orderId);
     
     if (orderId) {
-      // Check if order session is not too old (24 hours)
-      if (orderCreatedAt) {
-        const createdTime = new Date(orderCreatedAt);
-        const now = new Date();
-        const hoursDiff = (now - createdTime) / (1000 * 60 * 60);
-        
-        if (hoursDiff > 24) {
-          console.log('🕐 Order session expired, clearing...');
-          clearCurrentOrder();
-          return null;
-        }
-      }
-
       const result = await getOrder(orderId);
-      console.log('🔍 Get order result:', result);
-      
       if (result.success) {
-        console.log('✅ Order found in database:', result.order);
         setCurrentOrder(result.order);
         return result.order;
       } else {
         // Order tidak ditemukan di database, bersihkan session
         console.log('❌ Order not found in database, clearing session...');
         clearCurrentOrder();
-        // Lanjutkan ke fallback logic
       }
     }
     
@@ -398,17 +286,12 @@ export const useCheckout = () => {
     const userEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail');
     if (userEmail) {
       try {
-        console.log('📧 Searching orders for email:', userEmail);
         const result = await getOrdersByEmail(userEmail, 1, 1); // Ambil 1 order terbaru
-        
         if (result.success && result.orders && result.orders.length > 0) {
           const latestOrder = result.orders[0];
-          console.log('📋 Latest order found:', latestOrder._id, 'Payment status:', latestOrder.paymentStatus);
-          
           // Hanya ambil order yang statusnya pending payment
           if (latestOrder.paymentStatus === 'pending') {
             console.log('✅ Found latest pending order:', latestOrder._id);
-            
             // Simpan ke session untuk next time
             sessionStorage.setItem('currentOrderId', latestOrder._id);
             sessionStorage.setItem('orderCreatedAt', latestOrder.orderDate);
@@ -418,9 +301,7 @@ export const useCheckout = () => {
           } else {
             console.log('⚠️ Latest order is not pending payment:', latestOrder.paymentStatus);
           }
-        } else {
-          console.log('📭 No orders found for user');
-        }
+        } else console.log('📭 No orders found for user');
       } catch (error) {
         console.error('❌ Error getting latest order:', error);
       }
@@ -428,31 +309,8 @@ export const useCheckout = () => {
       console.log('❌ No user email found in storage');
     }
     
-    console.log('❌ No valid order found');
     return null;
   }, [getOrder, clearCurrentOrder, getOrdersByEmail]);
-
-  // Get order statistics (helper function)
-  const getOrderStats = useCallback(async (email) => {
-    try {
-      const result = await getOrdersByEmail(email, 1, 100); // Get all orders
-      if (result.success) {
-        const orders = result.orders;
-        return {
-          total: orders.length,
-          pending: orders.filter(o => o.status === 'pending').length,
-          confirmed: orders.filter(o => o.status === 'confirmed').length,
-          completed: orders.filter(o => o.status === 'completed').length,
-          cancelled: orders.filter(o => o.status === 'cancelled').length,
-          totalAmount: orders.reduce((sum, o) => sum + (o.pricing?.total || 0), 0)
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('❌ Error getting order stats:', error);
-      return null;
-    }
-  }, [getOrdersByEmail]);
 
   return {
     // State
@@ -471,8 +329,6 @@ export const useCheckout = () => {
     validateOrderData,
     formatOrderData,
     clearCurrentOrder,
-    getCurrentOrderFromSession,
-    getOrderStats,
-    retryRequest
+    getCurrentOrderFromSession
   };
 }; 

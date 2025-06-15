@@ -72,6 +72,7 @@ const AdminDashboard = () => {
     }
   }, [navigate, user])
 
+  /* Statistic Card Komponen
   const StatCard = ({ title, value, icon: Icon, trend }) => (
     <div className="bg-offwhite border-3 border-matteblack p-6 hover:shadow-matteblack hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
       <div className="flex items-center justify-between">
@@ -87,7 +88,7 @@ const AdminDashboard = () => {
         </div>
       </div>
     </div>
-  )
+  )*/
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -97,7 +98,7 @@ const AdminDashboard = () => {
         <p className="font-display text-matteblack mt-2">Kelola toko online KWU BEM dengan mudah</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Statistic Grid 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Total Users" 
@@ -123,7 +124,7 @@ const AdminDashboard = () => {
           icon={FaChartLine} 
           trend="15"
         />
-      </div>
+      </div> */}
 
       {/* Quick Actions */}
       <div className="bg-offwhite border-3 border-matteblack p-6">

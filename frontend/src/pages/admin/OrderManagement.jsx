@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FaEye, FaCheck, FaTimes, FaDownload } from 'react-icons/fa'
+import { FaEye, FaCheck, FaTimes, FaDownload, FaBell, FaBoxOpen } from 'react-icons/fa'
 import Button from '../../components/Button'
 import { useCheckout } from '../../hooks/useCheckout'
 import { API_ENDPOINTS } from '../../config/api'
@@ -13,6 +13,7 @@ const OrderManagement = () => {
   const [loading, setLoading] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showOrderDetail, setShowOrderDetail] = useState(false)
+  const [newOrdersCount, setNewOrdersCount] = useState(0)
 
   // Load orders dari backend
   const loadOrders = async () => {
@@ -41,6 +42,39 @@ const OrderManagement = () => {
     }
   };
 
+  // Load new orders count for notification
+  const loadNewOrdersCount = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.ORDERS.GET_NEW_COUNT);
+      const data = await response.json();
+      
+      if (data.success) {
+        setNewOrdersCount(data.count);
+      }
+    } catch (error) {
+      console.error('Error loading new orders count:', error);
+    }
+  };
+
+  // Mark orders as notified
+  const markOrdersNotified = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.ORDERS.MARK_NOTIFIED, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        setNewOrdersCount(0);
+        toast.success('Notifikasi pesanan baru telah dibaca');
+      }
+    } catch (error) {
+      console.error('Error marking orders notified:', error);
+    }
+  };
+
   // Konfirmasi pembayaran
   const confirmPayment = async (orderId) => {
     try {
@@ -56,6 +90,34 @@ const OrderManagement = () => {
     } catch (error) {
       console.error('Error confirming payment:', error);
       toast.error('Error confirming payment');
+    }
+  };
+
+  // Mark order ready for pickup
+  const markReadyPickup = async (orderId, adminNotes = '') => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(API_ENDPOINTS.ORDERS.MARK_READY_PICKUP(orderId), {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ adminNotes })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Pesanan berhasil ditandai siap pickup! Customer akan mendapat notifikasi.');
+        loadOrders(); // Refresh orders
+        setShowOrderDetail(false);
+      } else {
+        toast.error(data.message || 'Failed to mark ready pickup');
+      }
+    } catch (error) {
+      console.error('Error marking ready pickup:', error);
+      toast.error('Error marking ready pickup');
     }
   };
 
@@ -80,6 +142,14 @@ const OrderManagement = () => {
   // Load orders saat component mount
   useEffect(() => {
     loadOrders();
+    loadNewOrdersCount();
+    
+    // Polling setiap 30 detik untuk notifikasi baru
+    const interval = setInterval(() => {
+      loadNewOrdersCount();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Format currency
@@ -96,6 +166,7 @@ const OrderManagement = () => {
     switch (status) {
       case 'pending_confirmation': return 'bg-yellow-200 text-yellow-800 border-yellow-300'
       case 'confirmed': return 'bg-blue-200 text-blue-800 border-blue-300'
+      case 'ready_pickup': return 'bg-green-200 text-green-800 border-green-300'
       case 'picked_up': return 'bg-green-200 text-green-800 border-green-300'
       case 'cancelled': return 'bg-red-200 text-red-800 border-red-300'
       case 'expired': return 'bg-gray-200 text-gray-800 border-gray-300'
@@ -107,7 +178,19 @@ const OrderManagement = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="font-bricolage text-3xl font-bold text-matteblack">Order Management</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="font-bricolage text-3xl font-bold text-matteblack">Order Management</h1>
+          {/* Notifikasi Pesanan Baru */}
+          {newOrdersCount > 0 && (
+            <div 
+              onClick={markOrdersNotified}
+              className="flex items-center gap-2 bg-red-100 text-red-800 px-3 py-2 rounded-lg border border-red-300 cursor-pointer hover:bg-red-200 transition-all"
+            >
+              <FaBell className="text-sm animate-pulse" />
+              <span className="text-sm font-medium">{newOrdersCount} Pesanan Baru</span>
+            </div>
+          )}
+        </div>
         <div className="flex gap-3">
           <Button text="Refresh" onClick={loadOrders} className="flex items-center gap-2 bg-blue-600 text-white">
             <FaDownload />
@@ -211,6 +294,17 @@ const OrderManagement = () => {
                               <FaTimes className="text-xs" />
                             </button>
                           )}
+                          
+                          {/* Ready Pickup Button - only for confirmed orders */}
+                          {order.status === 'confirmed' && (
+                            <button 
+                              onClick={() => markReadyPickup(order._id, 'Pesanan siap diambil')}
+                              className="p-2 bg-orange-200 border-2 border-matteblack hover:shadow-matteblack-thin hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
+                              title="Mark Ready Pickup"
+                            >
+                              <FaBoxOpen className="text-xs" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -281,9 +375,24 @@ const OrderManagement = () => {
               </div>
 
               {/* Payment Proof Section */}
+              <h3 className="font-display-bold text-lg mb-3 text-matteblack">📸 Payment Proof</h3>
+              {selectedOrder.paymentProof?.imageUrl ? (
+                <div className="mb-6">
+                  <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                    <p className="text-green-600">Payment proof uploaded</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-6">
+                  <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                    <p className="text-red-600">Payment proof not uploaded</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Proof Image */}
               {selectedOrder.paymentProof?.imageUrl && (
                 <div className="mb-6">
-                  <h3 className="font-display-bold text-lg mb-3 text-matteblack">📸 Payment Proof</h3>
                   <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
