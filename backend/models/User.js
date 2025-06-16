@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -43,18 +42,6 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 }, {minimize: false});
-
-// Hash password sebelum disimpan
-// userSchema.pre('save', async function(next) {
-//   if (!this.isModified('password')) return next();
-//   this.password = await bcrypt.hash(this.password, 10);
-//   next();
-// });
-
-// Method untuk verifikasi password
-// userSchema.methods.comparePassword = async function(candidatePassword) {
-//   return await bcrypt.compare(candidatePassword, this.password);
-// };
 
 const userModel = mongoose.models.User || mongoose.model('User', userSchema);
 

@@ -1,19 +1,17 @@
 import express from 'express';
-import { loginUser, signUpUser, adminLogin, getUserProfile, logOutUser, refreshToken, getAuthStats } from '../controllers/userController.js';
-import { auth, validateRefreshToken } from '../middleware/authMiddleware.js';
+import { loginUser, registerUser, adminLogin, getUserProfile, logOutUser, refreshToken, changePassword } from '../controllers/userController.js';
+import { auth, validateRefreshToken, requireAdmin } from '../middleware/authMiddleware.js';
 
 const userRouter = express.Router();
 
-userRouter.post('/signup', signUpUser);
+userRouter.post('/register', registerUser);
 userRouter.post('/login', loginUser);
 userRouter.post('/logout', auth, logOutUser);
 userRouter.get('/profile', auth, getUserProfile);
-userRouter.post('/admin', adminLogin);
+userRouter.post('/change-password', auth, changePassword);
+userRouter.post('/admin-login', adminLogin);
 
 // Refresh token endpoints
 userRouter.post('/refresh-token', validateRefreshToken, refreshToken);
-
-// Monitoring endpoint (optional)
-userRouter.get('/auth-stats', auth, getAuthStats);
 
 export default userRouter; 

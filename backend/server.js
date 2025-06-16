@@ -1,9 +1,9 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import connectDB from './config/mongodb.js';
-import connnectCloudinary from './config/cloudinary.js';
 
 import userRouter from './routes/userRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -18,7 +18,11 @@ const app = express();
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // Frontend URL
+  credentials: true // Allow cookies
+}));
+app.use(cookieParser()); // Parse cookies
 app.use(express.json());
 
 // Routes

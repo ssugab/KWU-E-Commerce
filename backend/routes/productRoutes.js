@@ -4,11 +4,10 @@ import {
   getProduct,
   createProduct,
   updateProduct,
-  deleteProduct,
-  getProductByCategory
+  deleteProduct
 } from '../controllers/productController.js';
 import upload from '../middleware/multer.js';
-import { admin } from '../middleware/authMiddleware.js';
+import { auth, requireAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -22,8 +21,8 @@ router.post('/create', upload.fields([
                         {name:'image2', maxCount:1}, 
                         {name:'image3', maxCount:1}, 
                         {name:'image4', maxCount:1},
-                      ]), admin, createProduct); 
-router.put('/update/:id', admin, updateProduct);
-router.delete('/delete/:id', admin, deleteProduct);
+                      ]), auth, requireAdmin, createProduct); 
+router.put('/update/:id', auth, requireAdmin, updateProduct);
+router.delete('/delete/:id', auth, requireAdmin, deleteProduct);
 
 export default router; 

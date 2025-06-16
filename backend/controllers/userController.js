@@ -5,13 +5,27 @@ import bcrypt from 'bcrypt';
 import redisAuth from '../services/redisAuth.js';
 
 const createToken = (id) => {
-  // Access token: 15 menit untuk security
   const accessToken = jwt.sign({userId: id}, process.env.JWT_SECRET, {expiresIn: '15m'});
-  
-  // Refresh token: 7 hari untuk UX yang baik
   const refreshToken = jwt.sign({userId: id}, process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET, {expiresIn: '7d'});
 
-  return {accessToken, refreshToken};
+  return { accessToken, refreshToken };
+}
+
+const setCookies = (res, accessToken, refreshToken) => {
+  // 🍪 Set cookies untuk security (akan muncul di Postman)
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,    // Tidak bisa diakses JavaScript (XSS protection)
+    secure: process.env.NODE_ENV === 'production', // HTTPS only di production
+    sameSite: 'lax',   // CSRF protection
+    maxAge: 15 * 60 * 1000 // 15 menit
+  });
+
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 hari
+  });
 }
 
 // Login User Route
@@ -47,10 +61,11 @@ const loginUser = async (req, res) => {
       await redisAuth.cacheUser(user._id.toString(), userData);
 
       console.log('✅ Login successful with refresh token for:', user.email);
-      
+
+      setCookies(res, tokens.accessToken, tokens.refreshToken);
       res.json({
         success: true, 
-        message: "Login berhasil", 
+        message: "Login berhasil",
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         user: userData
@@ -66,26 +81,23 @@ const loginUser = async (req, res) => {
   }
 }
 
-// Sign Up User Route
-const signUpUser = async (req, res) => {
+// Register User Route
+const registerUser = async (req, res) => {
     try {
         const {name, npm, email, phone, password, role} = req.body;
 
-        // Check if user already exists by email
         const existingUserByEmail = await userModel.findOne({email});
         if(existingUserByEmail){
           console.log('User already exists with email:', email);
           return res.json({success:false, message:"User already exists with this email"})
         }
 
-        // Check if user already exists by npm
         const existingUserByNpm = await userModel.findOne({npm});
         if(existingUserByNpm){
           console.log('User already exists with NPM:', npm);
           return res.json({success:false, message:"User already exists with this NPM"})
         }
 
-        // Validate input
         if(!name || name.trim().length < 2){
           return res.json({success:false, message:"Name must be at least 2 characters long"})
         }
@@ -97,8 +109,8 @@ const signUpUser = async (req, res) => {
         if(!validator.isEmail(email)){
           return res.json({success:false, message:"Enter a valid email"})
         }
-        if(password.length < 8){
-          return res.json({success:false, message:"Password must be at least 8 characters long"})
+        if(password.length < 6){
+          return res.json({success:false, message:"Password must be at least 6 characters long"})
         }
         
         if(!validator.isMobilePhone(phone)){
@@ -139,6 +151,8 @@ const signUpUser = async (req, res) => {
         await redisAuth.saveRefreshToken(user._id.toString(), tokens.refreshToken);
         await redisAuth.cacheUser(user._id.toString(), userData);
 
+        setCookies(res, tokens.accessToken, tokens.refreshToken);
+
         res.json({
           success: true, 
           message: "User berhasil dibuat", 
@@ -148,36 +162,40 @@ const signUpUser = async (req, res) => {
         });
 
     } catch (error) {
-        console.log('Signup error:', error);
+        console.log('Register error:', error);
         res.json({success:false, message:error.message})
     }
 }
 
-// Logout User Route - With Token Blacklisting
+// Logout User Route
 const logOutUser = async (req, res) => {
   try {
     const {userId} = req.user;
-    const token = req.headers.authorization?.split(' ')[1];
+    
+    // Get token from multiple sources (same as middleware)
+    const token = req.headers.authorization?.split(' ')[1] || 
+                  req.headers.token || 
+                  req.cookies?.accessToken;
 
     if (!userId) {
       return res.json({success: false, message: "User ID not found"});
     }
 
-    // 🗑️ STEP 1: Delete session dari Redis
     await redisAuth.deleteSession(userId);
-
-    // 🚫 STEP 2: Blacklist current access token (immediate logout)
+    
     if (token) {
       await redisAuth.blacklistToken(token);
     }
 
-    // 🗄️ STEP 3: Delete refresh token
     await redisAuth.deleteRefreshToken(userId);
+
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
 
     console.log('✅ Logout successful with token blacklist for user:', userId);
     res.json({
       success: true, 
-      message: "Logout berhasil"
+      message: "Logout successful"
     });
 
   } catch (error) {
@@ -187,51 +205,129 @@ const logOutUser = async (req, res) => {
 }
 
 // Get User Profile Route
-const getUserProfile = async (req, res) => { 
+const getUserProfile = async (req, res) => {
   try {
-    const {userId} = req.user;
+    const { userId } = req.user;
     
-    // 🚀 STEP 1: Try to get from Redis cache first (SUPER FAST!)
-    const cachedResult = await redisAuth.getCachedUser(userId);
-    
-    if (cachedResult.success) {
-      // console.log('⚡ Profile from Redis cache');
-      return res.json({
-        success: true, 
-        ...cachedResult.data
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID not found"
       });
     }
 
-    // 🐌 STEP 2: If not in cache, get from database (slower)
-    console.log('🔍 Profile not in cache, loading from database...');
+    const cachedUser = await redisAuth.getCachedUser(userId);
+    
+    if (cachedUser.success) {
+      return res.json({
+        success: true,
+        user: cachedUser.data
+      });
+    }
+
+    // If not in cache, get from database 
     const user = await userModel.findById(userId).select('-password');
     
     if (!user) {
-      return res.json({success: false, message: "User not found"});
+      return res.status(401).json({
+        success: false, 
+        message: "User not found"
+      });
     }
     
     const userData = {
-      name: user.name, 
-      npm: user.npm, 
-      email: user.email, 
-      phone: user.phone, 
-      role: user.role
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      npm: user.npm,
+      phone: user.phone
     };
-
-    // 📦 STEP 3: Cache for next time
+    
     await redisAuth.cacheUser(userId, userData);
-    console.log('💾 Profile cached to Redis for next time');
     
     res.json({
-      success: true, 
-      ...userData
+      success: true,
+      user: userData
     });
 
   } catch (error) {
-    console.error('Get profile error:', error);
-    res.json({success: false, message: error.message});    
+    console.error('❌ Get user profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
-}
+};
+
+// Change Password Route
+const changePassword = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required"
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 6 characters long"
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be different from the old password"
+      });
+    }
+
+    // Get user from database
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordCorrect = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password is incorrect"
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password in database
+    await userModel.findByIdAndUpdate(userId, {
+      password: hashedNewPassword
+    });
+
+    console.log('✅ Password changed successfully for user:', user.email);
+    
+    res.json({
+      success: true,
+      message: "Password changed successfully"
+    });
+
+  } catch (error) {
+    console.error('❌ Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 // Admin Login Route
 const adminLogin = async (req, res) => {
@@ -239,10 +335,8 @@ const adminLogin = async (req, res) => {
     const {email, password} = req.body;
 
     if(email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD){
-      // Generate tokens untuk admin juga
       const tokens = createToken('admin');
       
-      // 💾 Save admin session to Redis
       const adminData = {
         email: process.env.ADMIN_EMAIL,
         name: 'Admin User',
@@ -253,8 +347,11 @@ const adminLogin = async (req, res) => {
 
       await redisAuth.saveSession('admin', adminData, tokens);
       await redisAuth.saveRefreshToken('admin', tokens.refreshToken);
+      await redisAuth.cacheUser('admin', adminData);
 
-      console.log('✅ Admin login successful');
+      setCookies(res, tokens.accessToken, tokens.refreshToken);
+
+      console.log('✅ Admin login successful with cookies and Redis session');
       res.json({
         success: true, 
         message: "Admin login berhasil", 
@@ -264,9 +361,11 @@ const adminLogin = async (req, res) => {
       });
     }
     else {
+      console.log('Invalid admin credentials:', email);
       res.json({success: false, message: "Invalid Admin Credentials"})
     }
   } catch (error) {
+    console.error('Admin login error:', error);
     res.json({success: false, message: error.message})
   }
 }
@@ -321,28 +420,12 @@ const refreshToken = async (req, res) => {
   }
 }
 
-// 📊 Get Auth Stats (untuk monitoring sederhana)
-const getAuthStats = async (req, res) => {
-  try {
-    const stats = await redisAuth.getStats();
-    
-    res.json({
-      success: true,
-      message: "Auth stats berhasil diambil",
-      stats
-    });
-  } catch (error) {
-    console.error('❌ Get auth stats error:', error);
-    res.json({success: false, message: error.message});
-  }
-}
-
 export { 
   loginUser, 
-  signUpUser, 
+  registerUser, 
   logOutUser, 
   adminLogin, 
   getUserProfile,
   refreshToken,
-  getAuthStats
+  changePassword
 }

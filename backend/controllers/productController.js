@@ -160,7 +160,7 @@ const createProduct = async (req, res) => {
   }
 };
 
-// Update Product (Admin only)
+// Update Product (Admin only) -- Not done yet
 const updateProduct = async (req, res) => {
   try {
 
@@ -235,23 +235,10 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-const getProductByCategory = async (req, res) => {
-  try {
-    const { category } = req.params;
-    const products = await productModel.find({category})
-
-    res.json({success: true, products})
-  } catch (error) {
-    console.log('Error in getProductByCategory:', error);
-    res.status(500).json({success: false, message: error.message})
-  }
-}
-
 export {
   getAllProducts,
   getProduct,
   createProduct,
   updateProduct,
-  deleteProduct,
-  getProductByCategory
+  deleteProduct
 }; 

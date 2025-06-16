@@ -1,40 +1,5 @@
 import { redis } from '../config/redis.js';
-
-/**
- * REDIS AUTH SERVICE
- * 
- * Fungsi untuk e-commerce mahasiswa dengan security yang tepat:
- * 1. Session Management - Untuk cart persistence dan login state
- * 2. User Caching - Untuk performa yang lebih baik
- * 3. Refresh Token - Security + UX yang baik (15 menit + 7 hari)
- * 4. Token Blacklist - Logout yang aman dan immediate
- * 5. Cart Persistence - Fitur utama e-commerce
- * 
- * Fitur yang dihapus dan alasannya:
- * - Token Blacklisting: Kompleks, tidak perlu untuk mahasiswa
- * - Rate Limiting: Mahasiswa tidak akan brute force
- * - Refresh Token: Membuat kode rumit, access token 24 jam cukup
- * - Activity Tracking: Monitoring tidak diperlukan
- * - Complex Statistics: Overkill untuk aplikasi sederhana
- *  Refresh token diperlukan karena:
- * - E-commerce butuh security yang baik (uang + data pribadi)
- * - User experience penting (mahasiswa tidak mau login terus)
- * - Multiple device usage (HP, laptop, komputer lab)
- * 
- * Token blacklist diperlukan karena:
- * - Logout harus immediate dan secure
- * - Mencegah token bekas dipakai lagi
- * - Multi-device logout capability
- */
-
 class RedisAuth {
-  
-  // ==================== SESSION MANAGEMENT ====================
-  
-  /**
-   * Simpan session user ke Redis
-   * TTL: 7 hari (sesuai refresh token)
-   */
   async saveSession(userId, userData, tokens) {
     try {
       const sessionKey = `session:${userId}`;
@@ -62,9 +27,6 @@ class RedisAuth {
     }
   }
 
-  /**
-   * Ambil session user dari Redis
-   */
   async getSession(userId) {
     try {
       const sessionKey = `session:${userId}`;
@@ -87,15 +49,12 @@ class RedisAuth {
     }
   }
 
-  /**
-   * Hapus session (logout)
-   */
   async deleteSession(userId) {
     try {
       const sessionKey = `session:${userId}`;
       await redis.del(sessionKey);
       
-      console.log(`✅ Session deleted for user: ${userId}`);
+      console.log(`✅ Session deleted for user: ${userId}`); //Log Out
       return { success: true };
     } catch (error) {
       console.error('❌ Delete session error:', error);
@@ -103,17 +62,11 @@ class RedisAuth {
     }
   }
 
-  // ==================== TOKEN BLACKLISTING ====================
-  
-  /**
-   * Blacklist token (saat logout)
-   * Diperlukan untuk logout yang immediate dan secure
-   * TTL: 15 menit (sesuai access token expiry)
-   */
+
   async blacklistToken(token) {
     try {
       const blacklistKey = `blacklist:${token}`;
-      await redis.setex(blacklistKey, 900, 'blacklisted'); // 15 menit
+      await redis.setex(blacklistKey, 900, 'blacklisted'); // 15 minutes
       
       console.log('✅ Token blacklisted for immediate logout');
       return { success: true };
@@ -123,31 +76,21 @@ class RedisAuth {
     }
   }
 
-  /**
-   * Cek apakah token sudah di-blacklist
-   * Diperlukan untuk security - token yang sudah logout tidak bisa dipakai
-   */
   async isTokenBlacklisted(token) {
     try {
       const blacklistKey = `blacklist:${token}`;
       const result = await redis.get(blacklistKey);
-      return result !== null; // true jika ada (blacklisted)
+      return result !== null; // true if exists (blacklisted)
     } catch (error) {
       console.error('❌ Check blacklist error:', error);
-      return false; // Default allow jika Redis error
+      return false; // Default allow if Redis error
     }
   }
 
-  // ==================== REFRESH TOKEN MANAGEMENT ====================
-  
-  /**
-   * Simpan refresh token
-   * TTL: 7 hari - untuk UX yang baik
-   */
   async saveRefreshToken(userId, refreshToken) {
     try {
       const refreshKey = `refresh:${userId}`;
-      await redis.setex(refreshKey, 604800, refreshToken); // 7 hari
+      await redis.setex(refreshKey, 604800, refreshToken); // 7 days
       return { success: true };
     } catch (error) {
       console.error('❌ Save refresh token error:', error);
@@ -156,8 +99,8 @@ class RedisAuth {
   }
 
   /**
-   * Validasi refresh token
-   * Diperlukan untuk generate access token baru
+   * Validate Refresh Token
+   * Needed to generate new access token
    */
   async validateRefreshToken(userId, refreshToken) {
     try {
@@ -175,26 +118,17 @@ class RedisAuth {
     }
   }
 
-  /**
-   * Hapus refresh token (logout)
-   */
   async deleteRefreshToken(userId) {
     try {
       const refreshKey = `refresh:${userId}`;
       await redis.del(refreshKey);
-      return { success: true };
+      return { success: true }; // Log Out
     } catch (error) {
       console.error('❌ Delete refresh token error:', error);
       return { success: false, error: error.message };
     }
   }
 
-  // ==================== USER CACHING ====================
-  
-  /**
-   * Cache user data untuk performa
-   * TTL: 1 jam (cukup untuk reduce database calls)
-   */
   async cacheUser(userId, userData) {
     try {
       const cacheKey = `user:${userId}`;
@@ -206,9 +140,6 @@ class RedisAuth {
     }
   }
 
-  /**
-   * Ambil cached user data
-   */
   async getCachedUser(userId) {
     try {
       const cacheKey = `user:${userId}`;
@@ -225,80 +156,8 @@ class RedisAuth {
     }
   }
 
-  // ==================== CART PERSISTENCE ====================
-  
-  /**
-   * Simpan cart data untuk persistence
-   * Khusus untuk e-commerce agar cart tidak hilang saat refresh
-   */
-  async saveCart(userId, cartData) {
-    try {
-      const cartKey = `cart:${userId}`;
-      await redis.setex(cartKey, 604800, JSON.stringify(cartData)); // 7 hari
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Save cart error:', error);
-      return { success: false, error: error.message };
-    }
-  }
 
-  /**
-   * Ambil cart data dari Redis
-   */
-  async getCart(userId) {
-    try {
-      const cartKey = `cart:${userId}`;
-      const cartData = await redis.get(cartKey);
-      
-      if (cartData) {
-        return { success: true, data: JSON.parse(cartData) };
-      }
-      
-      return { success: false, message: 'Cart not found' };
-    } catch (error) {
-      console.error('❌ Get cart error:', error);
-      return { success: false, error: error.message };
-    }
-  }
 
-  /**
-   * Hapus cart data (setelah checkout berhasil)
-   */
-  async clearCart(userId) {
-    try {
-      const cartKey = `cart:${userId}`;
-      await redis.del(cartKey);
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Clear cart error:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  // ==================== MONITORING (Optional) ====================
-  
-  /**
-   * Get basic stats untuk monitoring
-   * Simplified version - hanya yang penting
-   */
-  async getStats() {
-    try {
-      const [sessions, blacklisted, refreshTokens] = await Promise.all([
-        redis.keys('session:*'),
-        redis.keys('blacklist:*'),
-        redis.keys('refresh:*')
-      ]);
-
-      return {
-        activeSessions: sessions.length,
-        blacklistedTokens: blacklisted.length,
-        refreshTokens: refreshTokens.length
-      };
-    } catch (error) {
-      console.error('❌ Get stats error:', error);
-      return { activeSessions: 0, blacklistedTokens: 0, refreshTokens: 0 };
-    }
-  }
 }
 
 export default new RedisAuth(); 
