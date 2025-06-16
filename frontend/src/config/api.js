@@ -3,9 +3,12 @@ const API_URL = 'http://localhost:5000/api';
 export const API_ENDPOINTS = {
   USER: {
     LOGIN: `${API_URL}/user/login`,
-    SIGNUP: `${API_URL}/user/signup`,
+    REGISTER: `${API_URL}/user/register`,
+    SIGNUP: `${API_URL}/user/signup`, // Backward compatibility
     LOGOUT: `${API_URL}/user/logout`,
     PROFILE: `${API_URL}/user/profile`,
+    CHANGE_PASSWORD: `${API_URL}/user/change-password`,
+    REFRESH_TOKEN: `${API_URL}/user/refresh-token`,
     ADMIN_LOGIN: `${API_URL}/user/admin-login`,
     ADMIN_DASHBOARD: `${API_URL}/admin/dashboard`,
   },

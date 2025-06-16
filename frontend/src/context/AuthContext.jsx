@@ -19,15 +19,22 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Setup axios interceptor untuk menambahkan token otomatis
+  // Setup axios interceptor untuk menambahkan token otomatis dan support cookies
   useEffect(() => {
     const setupAxiosInterceptor = () => {
+      // Set default config untuk cookies
+      axios.defaults.withCredentials = true;
+      
       axios.interceptors.request.use(
         (config) => {
+          // Tetap kirim Authorization header sebagai fallback
           const token = authService.getToken();
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
           }
+          
+          // Pastikan withCredentials true untuk semua request
+          config.withCredentials = true;
           return config;
         },
         (error) => {
@@ -40,7 +47,22 @@ export const AuthProvider = ({ children }) => {
         (response) => response,
         (error) => {
           if (error.response?.status === 401) {
-            logout(); // Auto logout jika token expired
+            const requestUrl = error.config?.url || '';
+            
+            // 🚫 Jangan auto logout untuk endpoint login dan admin-login
+            if (requestUrl.includes('/login') || requestUrl.includes('/admin-login')) {
+              console.log('🔓 AuthContext - 401 on login endpoint, not logging out');
+              return Promise.reject(error);
+            }
+            
+            // 🚫 Jangan auto logout jika user belum authenticated (avoid loop)
+            if (!isAuthenticated) {
+              console.log('🔓 AuthContext - 401 detected but user not authenticated, skipping logout');
+              return Promise.reject(error);
+            }
+            
+            console.log('🚫 AuthContext - 401 detected on protected endpoint, logging out...');
+            logout(); // Auto logout jika token expired pada protected endpoints
           }
           return Promise.reject(error);
         }
@@ -82,71 +104,87 @@ export const AuthProvider = ({ children }) => {
   const fetchUserProfile = async () => {
     try {
       const response = await axios.get(API_ENDPOINTS.USER.PROFILE);
+      
       if (response.data.success) {
-        setUser(response.data);
+        // Backend mengirim user data dalam response.data.user
+        const userData = response.data.user || response.data;
+        setUser(userData);
         
         // Save email user to localStorage for fallback in payment
-        if (response.data.email) {
-          localStorage.setItem('userEmail', response.data.email);
+        if (userData.email) {
+          localStorage.setItem('userEmail', userData.email);
         }
         
-        return response.data;
+        return userData;
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('❌ AuthContext - Error fetching user profile:', error);
       throw error;
     }
   };
 
   const login = async (email, password) => {
-    console.log('🔄 AuthContext - Logging in...');
     const response = await authService.login(email, password);
 
-    console.log('✅ AuthContext - Login successful, setting authenticated true');
     setIsAuthenticated(true);
     
     // Fetch user profile setelah login berhasil
     await fetchUserProfile();
-    console.log('✅ AuthContext - User profile fetched after login');
     
     return response;
   };
 
-  const signup = async (name, npm, email, phone, password) => {
-    console.log('🔄 AuthContext - Signing up...');
-    const response = await authService.signup(name, npm, email, phone, password);
-    console.log('✅ AuthContext - Signup successful, setting authenticated true');
+  const register = async (name, npm, email, phone, password) => {
+    const response = await authService.register(name, npm, email, phone, password);
     setIsAuthenticated(true);
-    
-    // Fetch user profile setelah signup berhasil
+ 
     await fetchUserProfile();
-    console.log('✅ AuthContext - User profile fetched after signup');
     
     return response;
   };
+
+  // Backward compatibility alias
+  const signup = register;
 
   const adminLogin = async (email, password) => {
     try {
-      const response = await axios.post(`${API_ENDPOINTS.USER.LOGIN.replace('/login', '/admin')}`, {
+      const response = await axios.post(`${API_ENDPOINTS.USER.ADMIN_LOGIN}`, {
         email,
         password
+      }, {
+        withCredentials: true
       });
       
       if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
+        // Backend set cookies dan mengirim accessToken
+        const token = response.data.accessToken || response.data.token;
+        if (token) {
+          localStorage.setItem('token', token);
+          console.log('✅ AuthContext - Admin token saved to localStorage');
+          
+          // Verify token tersimpan
+          const savedToken = localStorage.getItem('token');
+          console.log('🔍 Token verification after save:', savedToken ? `${savedToken.substring(0, 20)}...` : 'NULL');
+        } else {
+          console.error('❌ No token received from admin login response');
+        }
+        
         setIsAuthenticated(true);
         
-        // Set admin user data
-        setUser({
+        // Set admin user data dari response backend
+        const userData = response.data.user || {
           email,
           role: 'admin',
           name: 'Admin User'
-        });
+        };
+        setUser(userData);
         
+        console.log('✅ AuthContext - Admin login successful');
         return response.data;
       }
       throw new Error(response.data.message);
     } catch (error) {
+      console.error('❌ AuthContext - Admin login error:', error);
       throw error.response?.data?.message || error.message;
     }
   };
@@ -160,7 +198,6 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setUser(null);
       
-      // Clear user email from localStorage
       localStorage.removeItem('userEmail');
     }
   };
@@ -172,16 +209,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const changePassword = async (currentPassword, newPassword) => {
+    console.log('🔄 AuthContext - Changing password...');
+    const response = await authService.changePassword(currentPassword, newPassword);
+    console.log('✅ AuthContext - Password changed successfully');
+    return response;
+  };
+
   const value = {
     isAuthenticated,
     user,
     loading,
     login,
-    signup,
+    register,
+    signup, // backward compatibility
     adminLogin,
     logout,
     refreshUser,
-    fetchUserProfile
+    fetchUserProfile,
+    changePassword
   };
 
   return (

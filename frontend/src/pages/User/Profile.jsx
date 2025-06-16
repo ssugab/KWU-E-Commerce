@@ -1,23 +1,36 @@
 import React, { useContext, useState, useEffect } from 'react'
-import authService from '../../services/authService';
 import { ShopContext } from '../../context/ShopContext';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import Button from '../../components/Button';
-import { FaUser, FaEnvelope, FaPhone, FaIdCard, FaArrowLeft, FaEdit, FaLock, FaSignOutAlt } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaIdCard, FaArrowLeft, FaEdit, FaLock, FaSignOutAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, changePassword, loading } = useAuth();
   const { navigate } = useContext(ShopContext);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     npm: '',
     email: '',
     phone: ''
   });
+
+  // Password change states
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -50,6 +63,21 @@ const Profile = () => {
     }));
   };
 
+  const handlePasswordInputChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   const handleSaveProfile = () => {
     // TODO: Implement save profile functionality
     toast.success('Profil berhasil diperbarui!');
@@ -62,17 +90,68 @@ const Profile = () => {
     navigate('/');
   };
 
-  const handleChangePassword = () => {
-    // TODO: Implement change password functionality
-    toast.info('Fitur ubah password akan segera hadir!');
+  const handleChangePassword = async () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error('Please fill in all password fields!');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New password and confirm password do not match!');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long!');
+      return;
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      toast.error('New password must be different from the old password!');
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      await changePassword(passwordData.currentPassword, passwordData.newPassword);
+      
+      toast.success('Password changed successfully!');
+      setShowChangePasswordModal(false);
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error) {
+      console.error('Change password error:', error);
+      toast.error(error.message || error || 'Error occurred while changing password');
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat profil...</p>
+          <p className="text-gray-600 mb-4">No user data found</p>
+          <Button 
+            text="Go to Login" 
+            onClick={() => navigate('/login')}
+            className="bg-accent text-matteblack"
+          />
         </div>
       </div>
     );
@@ -99,8 +178,6 @@ const Profile = () => {
 
       <div className='container mx-auto px-4 max-w-4xl'>
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-          
-
 
           {/* Profile Details */}
           <div className='lg:col-span-2 space-y-6'>
@@ -224,18 +301,17 @@ const Profile = () => {
                     <div className='p-2 bg-blue-100 rounded-full'>
                       <FaLock className='w-4 h-4 text-blue-600' />
                     </div>
+                    
                     <div>
-                      <h4 className='font-medium'>Password</h4>
-                      <p className='text-sm text-gray-600'>Change your account password</p>
+                      <p className='font-medium text-gray-800'>Password</p>
                     </div>
                   </div>
                   <Button 
-                    text="Change" 
-                    className="bg-blue-500 hover:bg-blue-600 border-blue-600 text-white text-sm py-1 px-4"
-                    onClick={handleChangePassword}
+                    text="Change Password"
+                    onClick={() => setShowChangePasswordModal(true)}
+                    className="bg-blue-600 text-white hover:bg-blue-700 text-sm px-4 py-2"
                   />
                 </div>
-
                 <div className='flex items-center justify-between p-4 bg-red-50 rounded-lg border-2 border-red-200 hover:border-red-300 transition-colors'>
                   <div className='flex items-center gap-3'>
                     <div className='p-2 bg-red-100 rounded-full'>
@@ -255,9 +331,9 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Quick Navigation */}
+            {/* Account Actions Card */}
             <div className='bg-white border-3 border-matteblack rounded-lg p-6 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-[3px] hover:-translate-y-[3px] transition-all duration-300'>
-              <h3 className='font-bricolage text-xl font-bold mb-6'>Quick Navigation</h3>
+              <h3 className='font-bricolage text-xl font-bold mb-6'>Account Actions</h3>
               
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <Link 
@@ -272,42 +348,129 @@ const Profile = () => {
                     <p className='text-sm text-gray-600'>View order history</p>
                   </div>
                 </Link>
-
-                <Link 
-                  to="/catalog" 
-                  className='flex items-center gap-3 p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-accent hover:bg-accent/10 transition-all group'
-                >
-                  <div className='p-2 bg-accent rounded-full group-hover:scale-110 transition-transform'>
-                    <FaUser className='w-4 h-4 text-matteblack' />
-                  </div>
-                  <div>
-                    <h4 className='font-medium'>Continue Shopping</h4>
-                    <p className='text-sm text-gray-600'>Browse products</p>
-                  </div>
-                </Link>
               </div>
+
             </div>
           </div>
+
         </div>
       </div>
 
+      {/* Change Password Modal */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-3 border-matteblack rounded-lg p-6 w-full max-w-md">
+            <h3 className="font-bricolage text-xl font-bold mb-4">Change Password</h3>
+            
+            <div className="space-y-4">
+              {/* Current Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                <div className="relative">
+                  <input
+                    type={showPasswords.current ? "text" : "password"}
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordInputChange}
+                    className="w-full px-3 py-2 pr-10 border-2 border-gray-300 rounded-lg focus:border-accent focus:outline-none"
+                    placeholder="Enter current password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => togglePasswordVisibility('current')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                  >
+                    {showPasswords.current ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                <div className="relative">
+                  <input
+                    type={showPasswords.new ? "text" : "password"}
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordInputChange}
+                    className="w-full px-3 py-2 pr-10 border-2 border-gray-300 rounded-lg focus:border-accent focus:outline-none"
+                    placeholder="Enter new password (min 6 characters)"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => togglePasswordVisibility('new')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                  >
+                    {showPasswords.new ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                <div className="relative">
+                  <input
+                    type={showPasswords.confirm ? "text" : "password"}
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordInputChange}
+                    className="w-full px-3 py-2 pr-10 border-2 border-gray-300 rounded-lg focus:border-accent focus:outline-none"
+                    placeholder="Confirm new password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => togglePasswordVisibility('confirm')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                  >
+                    {showPasswords.confirm ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                text={isChangingPassword ? "Changing..." : "Change Password"}
+                onClick={handleChangePassword}
+                disabled={isChangingPassword}
+                className="bg-blue-600 text-white hover:bg-blue-700 flex-1"
+              />
+              <Button
+                text="Cancel"
+                onClick={() => {
+                  setShowChangePasswordModal(false);
+                  setPasswordData({
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                  });
+                }}
+                className="bg-gray-500 text-white hover:bg-gray-600 flex-1"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
-          <div className='bg-white border-3 border-matteblack rounded-lg p-6 max-w-md w-full'>
-            <h3 className='font-bricolage text-xl font-bold mb-4'>Konfirmasi Logout</h3>
-            <p className='text-gray-600 mb-6'>Apakah Anda yakin ingin keluar dari akun?</p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-3 border-matteblack rounded-lg p-6 w-full max-w-sm">
+            <h3 className="font-bricolage text-xl font-bold mb-4">Confirm Logout</h3>
+            <p className="text-gray-600 mb-6">Are you sure you want to logout?</p>
             
-            <div className='flex gap-3'>
-              <Button 
-                text="Batal" 
-                className="flex-1 bg-gray-500 hover:bg-gray-600 border-gray-600 text-white"
-                onClick={() => setShowLogoutModal(false)}
-              />
-              <Button 
-                text="Ya, Logout" 
-                className="flex-1 bg-red-500 hover:bg-red-600 border-red-600 text-white"
+            <div className="flex gap-3">
+              <Button
+                text="Yes, Logout"
                 onClick={handleLogout}
+                className="bg-red-600 text-white hover:bg-red-700 flex-1"
+              />
+              <Button
+                text="Cancel"
+                onClick={() => setShowLogoutModal(false)}
+                className="bg-gray-500 text-white hover:bg-gray-600 flex-1"
               />
             </div>
           </div>

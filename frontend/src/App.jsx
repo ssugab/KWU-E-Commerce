@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import {Routes, Route, useLocation} from 'react-router-dom'
+import {Routes, Route, useLocation, Navigate} from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 
 import Home from './pages/Home'
@@ -8,8 +8,7 @@ import Catalog from './pages/Catalog'
 import Product from './pages/Product'
 import MainLayouts from './components/Layouts/MainLayouts'
 import AdminLayouts from './components/Layouts/AdminLayouts'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
+
 import Contact from './pages/Contact'
 import NotFound from './pages/NotFound'
 import Profile from './pages/User/profile'
@@ -24,9 +23,23 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 
 import { AuthProvider, useAuth } from './context/AuthContext'
 
+// Protected Route Component for Admin
+const AdminProtectedRoute = ({ children }) => {
+  const { user, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/admin-login" replace />;
+  }
+  
+  if (user?.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+};
+
 const App = () => {
   const location = useLocation();
-  const { user } = useAuth();
 
   // Effect to scroll to top of page when route changes
   useEffect(() => {
@@ -56,17 +69,19 @@ const App = () => {
           </Route>
 
           <Route path='/login' element={<Login />} />
-          <Route path='/signup' element={<SignUp />} />
+          <Route path='/register' element={<SignUp />} />
           
-          {/* Admin Routes */}
-          <Route element={user?.role === 'Admin' ? <AdminLayouts /> : <MainLayouts />}></Route>
+          {/* Admin Routes with Protection */}
+          <Route path='/admin-login' element={<AdminLogin />} />
           <Route element={<AdminLayouts />}>
-            <Route path='/admin/login' element={<AdminLogin />} />
-            <Route path='/admin/dashboard' element={<AdminDashboard />} />
+            <Route path='/admin/dashboard' element={
+              <AdminProtectedRoute>
+                <AdminDashboard />
+              </AdminProtectedRoute>
+            } />
           </Route>
           
           <Route path='*' element={<NotFound />} />
-       
         </Routes>
       </div>
     </AuthProvider>

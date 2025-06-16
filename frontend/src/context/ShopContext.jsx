@@ -21,18 +21,17 @@ const ShopContextProvider = (props) => {
     console.log('🔍 LoadCartFromDatabase - isAuthenticated:', isAuthenticated);
     console.log('🔍 LoadCartFromDatabase - products.length:', products.length);
     
-    if (!isAuthenticated) {
-      console.log('⚠️ User not authenticated, skipping cart load');
+    const token = localStorage.getItem('token');
+    if (!isAuthenticated || !token) {
+      console.log('⚠️ User not authenticated or no token, skipping cart load');
       return;
     }
 
     try {
-      console.log('🔄 Loading cart from database...');
       const response = await cartService.getCart();
-      console.log('📦 Cart response from database:', response);
       
       if (response.success && response.cart && response.cart.products) {
-        // Convert database cart format ke local cart format
+        // Convert database cart format to local cart format
         const loadedCart = {};
         response.cart.products.forEach(item => {
           const productId = item.productId._id;
@@ -49,11 +48,10 @@ const ShopContextProvider = (props) => {
         setCart(loadedCart);
       } else {
         console.log('📭 No cart found in database or empty cart');
-        setCart({}); // Set empty cart if no database cart
+        setCart({});
       }
     } catch (error) {
       console.error('🚨 Error loading cart from database:', error);
-      // Don't show error toast, just log - cart akan tetap menggunakan localStorage
     }
   };
 
@@ -235,11 +233,23 @@ const ShopContextProvider = (props) => {
 
   // Load cart from database when user logged in
   useEffect(() => {
-    if (isAuthenticated && products.length > 0) {
-      console.log('User authenticated and products loaded, loading cart from database...');
-      loadCartFromDatabase();
+    const token = localStorage.getItem('token');
+    
+    if (isAuthenticated && token && products.length > 0) {
+      console.log('✅ All conditions met: user authenticated, token exists, products loaded');
+      // Delay to prevent race condition
+      const timeoutId = setTimeout(() => {
+        loadCartFromDatabase();
+      }, 500); // 500ms delay
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      console.log('⚠️ Conditions not met for cart loading:', {
+        isAuthenticated,
+        tokenExists: !!token,
+        productsLength: products.length
+      });
     }
-
   }, [isAuthenticated, products.length]);
 
   /* useEffect(() => {

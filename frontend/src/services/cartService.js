@@ -4,20 +4,31 @@ import authService from './authService';
 
 const cartService = {
   // Helper untuk auth headers
-  getAuthHeaders: () => ({
-    'Authorization': `Bearer ${authService.getToken()}`,
-    'Content-Type': 'application/json'
-  }),
+  getAuthHeaders: () => {
+    const token = authService.getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  },
 
   // Get cart
   getCart: async () => {
     try {
+      // Cek token sebelum request
+      if (!authService.getToken()) {
+        throw new Error('Authentication required');
+      }
+      
       const response = await axios.get(API_ENDPOINTS.CART.GET, {
         headers: cartService.getAuthHeaders()
       });
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || 'Gagal mengambil cart';
+      throw error.response?.data?.message || error.message || 'Gagal mengambil cart';
     }
   },
 

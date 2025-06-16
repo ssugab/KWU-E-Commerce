@@ -7,16 +7,21 @@ const authService = {
       const response = await axios.post(API_ENDPOINTS.USER.LOGIN, {
         email,
         password
+      }, {
+        withCredentials: true // Important for cookies
       });
-      console.log('🔍 AuthService - Login response:', response.data);
       
       if (response.data.success) {
-        // Simpan accessToken ke localStorage (backend menggunakan accessToken sekarang)
+        // Backend set cookies, save to localStorage for fallback
         const token = response.data.accessToken || response.data.token;
-        localStorage.setItem('token', token);
-        console.log('✅ AuthService - Token saved to localStorage:', token ? 'exists' : 'missing');
+        if (token) {
+          localStorage.setItem('token', token);
+          console.log('✅ AuthService - Token saved to localStorage as fallback', token ? 'exists' : 'not found');
+        }
+        console.log('🍪 AuthService - Cookies should be set by backend');
         return response.data;
       }
+      
       throw new Error(response.data.message);
     } catch (error) {
       console.error('❌ AuthService - Login error:', error);
@@ -24,47 +29,46 @@ const authService = {
     }
   },
 
-  signup: async (name, npm, email, phone, password) => {
+  register: async (name, npm, email, phone, password) => {
     try {
-      const response = await axios.post(API_ENDPOINTS.USER.SIGNUP, {
+      const response = await axios.post(API_ENDPOINTS.USER.REGISTER, {
         name,
         npm,
         email,
         phone,
         password
+      }, {
+        withCredentials: true 
       });
-      console.log('🔍 AuthService - Signup response:', response.data);
       
       if (response.data.success) {
-        // Simpan accessToken ke localStorage (backend menggunakan accessToken sekarang)
+
         const token = response.data.accessToken || response.data.token;
-        localStorage.setItem('token', token);
-        console.log('✅ AuthService - Token saved to localStorage after signup:', token ? 'exists' : 'missing');
+        if (token) {
+          localStorage.setItem('token', token);
+          console.log('✅ AuthService - Token saved to localStorage as fallback', token ? 'exists' : 'missing');
+        }
+        console.log('🍪 AuthService - Cookies should be set by backend');
         return response.data;
       }
       throw new Error(response.data.message);
     } catch (error) {
-      console.error('❌ AuthService - Signup error:', error);
+      console.error('❌ AuthService - Register error:', error);
       throw error.response?.data?.message || error.message;
     }
   },
 
   logout: async () => {
     try {
-      // Call backend logout endpoint untuk blacklist token
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.post(API_ENDPOINTS.USER.LOGOUT, {}, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
+      await axios.post(API_ENDPOINTS.USER.LOGOUT, {}, {
+        withCredentials: true 
+      });
+      console.log('✅ AuthService - Logout API called, cookies cleared by backend');
     } catch (error) {
-      console.error('Logout API error:', error);
-      // Tetap lanjut hapus token lokal meski API error
+      console.error('❌ AuthService - Logout API error:', error);
+      // Continue to remove local token even if API error
     } finally {
-      // Hapus token dari localStorage
+      // Remove token from localStorage
       localStorage.removeItem('token');
     }
   },
@@ -75,6 +79,31 @@ const authService = {
 
   isAuthenticated: () => {
     return !!localStorage.getItem('token');
+  },
+
+  // Backward compatibility alias
+  signup: function(name, npm, email, phone, password) {
+    return this.register(name, npm, email, phone, password);
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    try {
+      const response = await axios.post(API_ENDPOINTS.USER.CHANGE_PASSWORD, {
+        currentPassword,
+        newPassword
+      }, {
+        withCredentials: true 
+      });
+      
+      if (response.data.success) {
+        console.log('✅ AuthService - Password changed successfully');
+        return response.data;
+      }
+      throw new Error(response.data.message);
+    } catch (error) {
+      console.error('❌ AuthService - Change password error:', error);
+      throw error.response?.data?.message || error.message;
+    }
   }
 };
 

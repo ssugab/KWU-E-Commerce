@@ -45,11 +45,20 @@ const OrderManagement = () => {
   // Load new orders count for notification
   const loadNewOrdersCount = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.ORDERS.GET_NEW_COUNT);
+      const token = localStorage.getItem('token');
+      const response = await fetch(API_ENDPOINTS.ORDERS.GET_NEW_COUNT, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Include cookies untuk hybrid auth
+      });
       const data = await response.json();
       
       if (data.success) {
         setNewOrdersCount(data.count);
+      } else {
+        console.error('❌ API Error:', data.message);
       }
     } catch (error) {
       console.error('Error loading new orders count:', error);
@@ -59,11 +68,14 @@ const OrderManagement = () => {
   // Mark orders as notified
   const markOrdersNotified = async () => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(API_ENDPOINTS.ORDERS.MARK_NOTIFIED, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        credentials: 'include' // Include cookies untuk hybrid auth
       });
       
       if (response.ok) {

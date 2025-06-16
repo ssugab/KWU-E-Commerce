@@ -1,20 +1,22 @@
 import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Button from '../../components/Button';
 import toast, { Toaster } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { ShopContext } from '../../context/ShopContext';
 
 const SignUpPage = () => {
-  const [currentState, setCurrentState] = useState('Sign Up');
+  const [currentState, setCurrentState] = useState('Register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [npm, setNpm] = useState('');
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { navigate } = useContext(ShopContext);
-  const { signup } = useAuth();
+  const { register } = useAuth();
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,7 +38,6 @@ const SignUpPage = () => {
     setIsLoading(true);
 
     try {
-      // Validasi input
       if (!name || !npm || !email || !phone || !password) {
         throw new Error("Please fill all fields!");
       }
@@ -57,12 +58,10 @@ const SignUpPage = () => {
         throw new Error("Password must be at least 6 characters");
       }
 
-      // Proses signup
-      await signup(name, npm, email, phone, password);
+      await register(name, npm, email, phone, password);
       
       toast.success('Registration successful! Welcome!');
 
-      // Redirect to home after successful signup
       setTimeout(() => {
         navigate('/');
       }, 1500);
@@ -154,14 +153,24 @@ const SignUpPage = () => {
           </div>
           <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-              placeholder='Minimal 6 characters' 
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                className='w-full py-3 px-4 pr-12 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
+                placeholder='Minimal 6 characters' 
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800 transition-colors"
+                disabled={isLoading}
+              >
+                {showPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
           
           {currentState === "Login" && (
@@ -171,17 +180,17 @@ const SignUpPage = () => {
           )}
 
           <Button 
-            text={isLoading ? 'Signing Up...' : 'Sign Up'} 
+            text={isLoading ? 'Registering...' : 'Register'} 
             type="submit"
             className={`w-full text-center py-3 mt-6 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={isLoading}
           />
 
-          {/* Toggle Login/Sign Up */}
+          {/* Toggle Login/Register */}
           <div className="flex gap-1 justify-start font-display text-sm text-gray-500 hover:text-gray-700">
             <span>Already have an account? </span>
             <Link to='/login'>
-              <span className="text-accent cursor-pointer hover:text-amber-700 hover:underline font-bold"  onClick={() => setCurrentState(currentState === 'Login' ? 'Sign Up' : 'Login')}>
+              <span className="text-accent cursor-pointer hover:text-amber-700 hover:underline font-bold"  onClick={() => setCurrentState(currentState === 'Login' ? 'Register' : 'Login')}>
                 Login
               </span>
             </Link> 

@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Button from '../../components/Button';
 import toast, { Toaster } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login, signup } = useAuth();
+  const { login } = useAuth();
   const [currentState, setCurrentState] = useState('Login'); // Login/Signup
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [npm, setNpm] = useState('');
-  const [phone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,7 +25,7 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      if (!email || !password || (currentState === "Sign Up" && (!name || !npm))) {
+      if (!email || !password ) {
         throw new Error("Harap isi semua bidang yang wajib diisi!");
       }
 
@@ -39,14 +38,9 @@ const LoginPage = () => {
 
       if (currentState === 'Login') {
         await login(email, password);
-        toast.success('Login berhasil!');
-        
-      } else {
-        await signup(name, npm, email, phone, password);
-        toast.success('Registrasi berhasil!');
+        toast.success('Login berhasil!');  
       }
-
-      // Redirect to Home Page
+      
       setTimeout(() => {
         navigate('/');
         window.location.reload();
@@ -94,14 +88,24 @@ const LoginPage = () => {
 
           <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              className='w-full py-3 px-4 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-              placeholder='6 Characters Minimum' 
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                className='w-full py-3 px-4 pr-12 border-3 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
+                placeholder='6 Characters Minimum' 
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800 transition-colors"
+                disabled={isLoading}
+              >
+                {showPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
           
           {currentState === "Login" && (
@@ -111,21 +115,21 @@ const LoginPage = () => {
           )}
        
           <Button 
-            text={isLoading ? 'Loading...' : (currentState === 'Login' ? 'Login' : 'Sign Up')} 
+            text={isLoading ? 'Loading...' : (currentState === 'Login' ? 'Login' : 'Register')} 
             type="submit"
-            className={`w-full text-center py-3 ${currentState === 'Sign Up' ? 'mt-6' : ''}`}
+            className={`w-full text-center py-3 ${currentState === 'Register' ? 'mt-6' : ''}`}
             disabled={isLoading}
           />
 
-          {/* Toggle Login/Sign Up */}
+          {/* Toggle Login/Register */}
           <p className="justify-start font-display text-sm text-gray-500 hover:text-gray-700">
           {currentState === 'Login' ? 'Don\'t have an account? ' : 'Have an account? '}
-            <Link to='/signup'>
+            <Link to='/register'>
             <span 
               className="text-accent cursor-pointer hover:text-amber-700 hover:underline font-bold"  
-              onClick={() => !isLoading && setCurrentState(currentState === 'Login' ? 'Sign Up' : 'Login')}
+              onClick={() => !isLoading && setCurrentState(currentState === 'Login' ? 'Register' : 'Login')}
             >
-              {currentState === 'Login' ? 'Sign Up' : 'Login'}
+              {currentState === 'Login' ? 'Register' : 'Login'}
             </span>
             </Link>
           </p>

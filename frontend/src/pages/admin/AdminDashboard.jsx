@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { FaUsers, FaShoppingBag, FaChartLine, FaCog, FaBox, FaBell, FaCheck } from 'react-icons/fa'
+import { useNavigate } from 'react-router-dom'
 import Button from '../../components/Button'
 import { useAuth } from '../../context/AuthContext'
 import { API_ENDPOINTS } from '../../config/api'
 import toast from 'react-hot-toast'
-// Import komponen terpisah
+
 import OrderManagement from './OrderManagement'
 import ProductManagement from './ProductManagement'
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview')
-  const { user, navigate } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   
   // Basic stats states (tanpa order management logic)
   const [stats, setStats] = useState({
@@ -62,15 +64,22 @@ const AdminDashboard = () => {
     }
   };
 
-  // Check if user is admin and redirect to home if not
-  useEffect(() => {
-    if(!user?.role === 'admin'){
-      toast.error('You are not authorized to access this page')
-      navigate('/')
-    } else {
-      loadStats(); // Load basic stats for overview
+  // Handle logout function
+  const handleLogout = async () => {
+    try {
+      await logout()
+      toast.success('Logout berhasil')
+      navigate('/admin-login')
+    } catch (error) {
+      console.error('Logout error:', error)
+      toast.error('Gagal logout')
     }
-  }, [navigate, user])
+  }
+
+  // Load basic stats on component mount (route protection handles admin access)
+  useEffect(() => {
+    loadStats(); // Load basic stats for overview
+  }, [])
 
   /* Statistic Card Komponen
   const StatCard = ({ title, value, icon: Icon, trend }) => (
@@ -175,7 +184,6 @@ const AdminDashboard = () => {
     </div>
   )
 
-  // Simplified render functions using separate components
   const renderOrders = () => <OrderManagement />
   const renderProducts = () => <ProductManagement />
 
@@ -200,7 +208,12 @@ const AdminDashboard = () => {
     <div className="space-y-6">
       <h1 className="font-bricolage text-3xl font-bold text-matteblack">Settings</h1>
       <div className="bg-offwhite border-3 border-matteblack p-6">
-        <p className="font-display text-center text-gray-600">Settings panel coming soon...</p>
+        <p className="font-display text-center text-gray-600">Settings management coming soon...</p>
+        <div className="mt-4 p-4 bg-gray-100 border-2 border-gray-300">
+          <p className="font-display text-gray-700 text-sm">Current Stats:</p>
+          <p className="font-display text-gray-700 text-sm">Total Orders: {stats.totalOrders}</p>
+          <p className="font-display text-gray-700 text-sm">Total Revenue: {formatCurrency(stats.totalRevenue)}</p>
+        </div>
       </div>
     </div>
   )
@@ -265,7 +278,11 @@ const AdminDashboard = () => {
         
         {/* Logout Button */}
         <div className="absolute bottom-6 left-6 right-6">
-          <Button text="Logout" className="w-full bg-red-500 hover:bg-red-600 border-red-600" />
+          <Button 
+            text="Logout" 
+            onClick={handleLogout}
+            className="w-full bg-red-500 hover:bg-red-600 border-red-600" 
+          />
         </div>
       </div>
 

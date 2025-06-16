@@ -8,9 +8,8 @@ import toast from 'react-hot-toast';
 const Navbar = () => {
 
   const { getCartCount, navigate } = useContext(ShopContext);
-  const { isAuthenticated, login, logout } = useAuth();
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'Admin';
+  const { isAuthenticated, logout, user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [visible, setVisible] = useState(false);
 
   const handleLogout = () => {
@@ -20,12 +19,6 @@ const Navbar = () => {
       navigate('/');
       window.location.reload();
     }, 2000);
-  };
-
-  const handleLogin = () => {
-    login();
-    navigate('/');
-    window.location.reload();
   };
 
   useEffect(() => { // untuk menutup sidebar menu saat ukuran layar lebih besar dari md screen
