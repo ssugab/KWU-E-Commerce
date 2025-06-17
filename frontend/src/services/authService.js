@@ -14,10 +14,18 @@ const authService = {
       if (response.data.success) {
         // Backend set cookies, save to localStorage for fallback
         const token = response.data.accessToken || response.data.token;
+        const refreshToken = response.data.refreshToken;
+        
         if (token) {
           localStorage.setItem('token', token);
           console.log('✅ AuthService - Token saved to localStorage as fallback', token ? 'exists' : 'not found');
         }
+        
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+          console.log('✅ AuthService - Refresh token saved to localStorage');
+        }
+        
         console.log('🍪 AuthService - Cookies should be set by backend');
         return response.data;
       }
@@ -42,12 +50,19 @@ const authService = {
       });
       
       if (response.data.success) {
-
         const token = response.data.accessToken || response.data.token;
+        const refreshToken = response.data.refreshToken;
+        
         if (token) {
           localStorage.setItem('token', token);
           console.log('✅ AuthService - Token saved to localStorage as fallback', token ? 'exists' : 'missing');
         }
+        
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+          console.log('✅ AuthService - Refresh token saved to localStorage');
+        }
+        
         console.log('🍪 AuthService - Cookies should be set by backend');
         return response.data;
       }
@@ -68,13 +83,18 @@ const authService = {
       console.error('❌ AuthService - Logout API error:', error);
       // Continue to remove local token even if API error
     } finally {
-      // Remove token from localStorage
+      // Remove tokens from localStorage
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
     }
   },
 
   getToken: () => {
     return localStorage.getItem('token');
+  },
+
+  getRefreshToken: () => {
+    return localStorage.getItem('refreshToken');
   },
 
   isAuthenticated: () => {

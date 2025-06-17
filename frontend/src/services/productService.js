@@ -2,7 +2,7 @@ import { API_ENDPOINTS } from '../config/api';
 
 const getAllProducts = async () => {
   try {
-    const response = await fetch(API_ENDPOINTS.PRODUCTS.GET_ALL);
+    const response = await fetch(API_ENDPOINTS.CATALOG.GET_ALL);
     const data = await response.json();
     if (!data.success) {
       throw new Error(data.message);
@@ -16,7 +16,7 @@ const getAllProducts = async () => {
 
 const getProduct = async (id) => {
   try {
-    const response = await fetch(API_ENDPOINTS.PRODUCTS.GET_ONE(id));
+    const response = await fetch(API_ENDPOINTS.CATALOG.GET_ONE(id));
     const data = await response.json();
     if (!data.success) {
       throw new Error(data.message);
@@ -30,7 +30,7 @@ const getProduct = async (id) => {
 
 const getLatestProducts = async () => {
   try {
-    const response = await fetch(API_ENDPOINTS.PRODUCTS.LATEST);
+    const response = await fetch(API_ENDPOINTS.CATALOG.GET_FEATURED);
     const data = await response.json();
     if (!data.success) {
       throw new Error(data.message);
