@@ -221,8 +221,8 @@ const Product = () => {
                 </div>
               </div>
 
-              {/* Add to Cart & Buy Now Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 items-center">
+              {/* Add to Cart Buttons */}
+              <div className="items-center">
                 <Button 
                   text={
                     (product.stock || 0) <= 0 
@@ -238,10 +238,6 @@ const Product = () => {
                     handleAddToCart();
                   }}
                     disabled={!product.stock || product.stock <= 0}
-                />
-                <Button 
-                  text="Buy Now"
-                  className="flex-1 bg-offwhite hover:text-offwhite transition-all duration-200"
                 />
               </div>
             </div>

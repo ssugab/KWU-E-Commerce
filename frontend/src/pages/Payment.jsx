@@ -129,7 +129,10 @@ const Payment = () => {
       
       if (result.success) {
         console.log('✅ Payment proof uploaded successfully');
-        toast.success('Bukti pembayaran berhasil dikirim! Menunggu konfirmasi admin.');
+        const successMessage = isRejected 
+          ? 'Bukti pembayaran berhasil diupload ulang! Menunggu konfirmasi admin.' 
+          : 'Bukti pembayaran berhasil dikirim! Menunggu konfirmasi admin.';
+        toast.success(successMessage);
         
         // 🔄 Redirect to orders page after 2 seconds
         setTimeout(() => {
@@ -162,7 +165,7 @@ const Payment = () => {
 
   // ❌ NO ORDER STATE
   if (!order) {
-    return (
+  return (
       <div className='min-h-screen flex items-center justify-center'>
         <div className='text-center'>
           <h2 className='text-2xl font-bold text-gray-800 mb-4'>Order Not Found</h2>
@@ -173,8 +176,9 @@ const Payment = () => {
     );
   }
 
-  // 💰 Check if order is paid
+  // 💰 Check payment status
   const isPaid = order.paymentStatus === 'paid';
+  const isRejected = order.paymentStatus === 'failed';
 
   return (
     <div className='min-h-screen bg-offwhite2'>
@@ -194,8 +198,29 @@ const Payment = () => {
 
           {/* 📋 TITLE */}
           <h1 className='font-atemica text-2xl md:text-3xl mb-8 text-gray-900'>
-            Order Payment
+            {isRejected ? 'Upload Ulang Bukti Pembayaran' : 'Order Payment'}
           </h1>
+
+          {/* ❌ PAYMENT REJECTED NOTIFICATION */}
+          {isRejected && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-red-600 text-xl">❌</div>
+                <div className="flex-1">
+                  <p className="text-red-800 font-bold mb-1">Bukti Pembayaran Sebelumnya Ditolak</p>
+                  <p className="text-red-700 text-sm mb-3">
+                    Bukti pembayaran yang Anda upload sebelumnya tidak valid. Silakan upload ulang bukti pembayaran yang benar.
+                  </p>
+                  {order.adminNotes && (
+                    <div className="text-sm text-red-600 bg-red-100 p-2 rounded">
+                      <p className="font-medium">Alasan penolakan:</p>
+                      <p>{order.adminNotes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 📊 MAIN CONTENT */}
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
@@ -231,13 +256,21 @@ const Payment = () => {
                 <div className='flex items-center gap-2 mb-2'>
                   {isPaid ? (
                     <FaCheckCircle className='text-green-500' />
+                  ) : isRejected ? (
+                    <FaTimesCircle className='text-red-500' />
                   ) : (
                     <div className='w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin'></div>
                   )}
                   <h3 className='font-semibold'>Payment Status</h3>
                 </div>
-                <p className={`text-sm ${isPaid ? 'text-green-700' : 'text-orange-700'}`}>
-                  {isPaid ? 'Payment Success' : 'Waiting for Payment'}
+                <p className={`text-sm ${
+                  isPaid ? 'text-green-700' : 
+                  isRejected ? 'text-red-700' : 
+                  'text-orange-700'
+                }`}>
+                  {isPaid ? 'Payment Success' : 
+                   isRejected ? 'Payment Rejected - Upload Required' : 
+                   'Waiting for Payment'}
                 </p>
               </div>
             </div>
@@ -289,7 +322,22 @@ const Payment = () => {
               ) : (
                 // 📤 UPLOAD FORM
                 <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
-                  <h2 className='font-atemica text-xl mb-6 text-gray-900'>📤 Upload Payment Proof</h2>
+                  <h2 className='font-atemica text-xl mb-6 text-gray-900'>
+                    📤 {isRejected ? 'Upload Ulang Bukti Pembayaran' : 'Upload Payment Proof'}
+                  </h2>
+                  
+                  {/* 📋 Tips untuk upload ulang */}
+                  {isRejected && (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-yellow-800 font-medium text-sm mb-2">💡 Tips untuk upload yang benar:</p>
+                      <ul className="list-disc list-inside text-yellow-700 text-sm space-y-1">
+                        <li>Pastikan foto jelas dan tidak blur</li>
+                        <li>Foto harus menunjukkan nama penerima yang benar</li>
+                        <li>Jumlah transfer harus sesuai: <strong>Rp {order.pricing?.total?.toLocaleString()}</strong></li>
+                        <li>Screenshot dari aplikasi mobile banking resmi</li>
+                      </ul>
+                    </div>
+                  )}
                   
                   <div className='space-y-4'>
                     {/* 📁 FILE INPUT */}
@@ -353,13 +401,15 @@ const Payment = () => {
 
                     {/* 🚀 SUBMIT BUTTON */}
                     <Button
-                      text={uploading ? 'Sending...' : 'Submit Payment Proof'}
+                      text={uploading ? 'Mengirim...' : 
+                            isRejected ? 'Upload Ulang Bukti Pembayaran' : 
+                            'Submit Payment Proof'}
                       onClick={submitPayment}
                       disabled={!paymentFile || uploading}
                       className={`w-full ${
                         !paymentFile || uploading 
                           ? 'bg-gray-300 cursor-not-allowed' 
-                          : 'bg-accent hover:bg-accent/90'
+                          : isRejected ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-accent hover:bg-accent/90'
                       }`}
                     />
 
@@ -395,7 +445,7 @@ const Payment = () => {
               </div>
             </div>
           </div>
-
+      
         </div>
       </div>
     </div>

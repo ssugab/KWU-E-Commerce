@@ -1,26 +1,106 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { Navigation, Pagination } from 'swiper/modules';
 
-import { Link } from 'react-router-dom';
 import { assets,  howToOrder } from '../assets/assets';
-import LatestProducts from '../components/Products/LatestProducts';
+import FeaturedProducts from '../components/Products/LatestProducts';
 import Button from "../components/Button";
 import { FaInstagram, FaTiktok, FaYoutube, FaEnvelope } from 'react-icons/fa';
+import { API_ENDPOINTS } from '../config/api';
 
 const Home = () => {
-  // Products Ospek Kit
-  const products = [
-    { img: assets.ospekkit, name: "Ospek Kit 2025", link: "/produk/ospekkit" },
-    { img: assets.product1, name: "Merchandise Ospek 2025", link: "/produk/merchandise" },
-    { img: assets.product2, name: "Notebook Ospek 2025", link: "/produk/notebook" },
-  ];
+  // State untuk hero configuration
+  const [heroConfig, setHeroConfig] = useState({
+    title: 'Ospek Kit Collection',
+    subtitle: 'Produk terbaru dari KWU',
+    products: []
+  });
+  const [loading, setLoading] = useState(true);
 
   // State untuk menyimpan produk yang sedang aktif
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // Load hero products from backend
+  useEffect(() => {
+    const loadHeroProducts = async () => {
+      try {
+        const response = await fetch(API_ENDPOINTS.CATALOG.GET_HERO);
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+          setHeroConfig({
+            title: 'Ospek Kit Collection',
+            subtitle: 'Produk terbaru dari KWU',
+            products: result.data.map(product => ({
+              ...product,
+              images: product.originalProduct?.images || [product.image],
+              link: `/product/${product.id}`
+            }))
+          });
+        } else {
+          // Fallback to default products if no hero products
+          setHeroConfig({
+            title: 'Ospek Kit Collection',
+            subtitle: 'Produk terbaru dari KWU',
+            products: [
+              { 
+                images: [assets.ospekkit], 
+                name: "Ospek Kit 2025", 
+                link: "/catalog",
+                id: "default-1"
+              },
+              { 
+                images: [assets.product1], 
+                name: "Merchandise Ospek 2025", 
+                link: "/catalog",
+                id: "default-2"
+              },
+              { 
+                images: [assets.product2], 
+                name: "Notebook Ospek 2025", 
+                link: "/catalog",
+                id: "default-3"
+              },
+            ]
+          });
+        }
+      } catch (error) {
+        console.error('Error loading hero products:', error);
+        // Fallback to default products
+        setHeroConfig({
+          title: 'Ospek Kit Collection',
+          subtitle: 'Produk terbaru dari KWU',
+          products: [
+            { 
+              images: [assets.ospekkit], 
+              name: "Ospek Kit 2025", 
+              link: "/catalog",
+              id: "default-1"
+            },
+            { 
+              images: [assets.product1], 
+              name: "Merchandise Ospek 2025", 
+              link: "/catalog",
+              id: "default-2"
+            },
+            { 
+              images: [assets.product2], 
+              name: "Notebook Ospek 2025", 
+              link: "/catalog",
+              id: "default-3"
+            },
+          ]
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHeroProducts();
+  }, []);
 
   return (
     <div>
@@ -31,7 +111,7 @@ const Home = () => {
           {/* Hero Left (Image Slider + Thumbnail Preview) */}
           <div className="w-full md:w-1/2 flex flex-col items-center">
             {/* Swiper Slider */}
-            <div className="relative w-3/4 md:w-3/7 mb-5 overflow-visible border-3 mt-5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-[4px] hover:-translate-y-[4px] transition-all duration-300">
+            <div className="relative w-3/4 md:w-3/7 mb-5 overflow-hidden border-3 mt-5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-[4px] hover:-translate-y-[4px] transition-all duration-300">
               <Swiper
                 modules={[Navigation, Pagination]}
                 navigation={{ prevEl: ".custom-prev", nextEl: ".custom-next" }}
@@ -43,14 +123,22 @@ const Home = () => {
                 }}
                 onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
               >
-                {products.map((product, index) => (
-                  <SwiperSlide key={index}>
-                    <img className="w-85 p-4 pt-10 md:pt-4 rounded-lg m-auto mb-5" src={product.img} alt={product.name} />
+                {heroConfig.products.map((product, index) => (
+                  <SwiperSlide key={product.id || index}>
+                    <div className="w-full h-85 p-4 pt-10 md:pt-4 pb-5">
+                      <div className="w-full h-full bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
+                        <img 
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                          src={product.images?.[0] || product.image || product.img} 
+                          alt={product.name}
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
                   </SwiperSlide>
                 ))}
               </Swiper>
 
-              {/* Tombol Navigasi Custom (Ditempatkan di dalam slider) */}
               <div className="absolute top-1/2 transform left-2 right-2 -translate-y-1/2 w-auto flex justify-between z-10 pointer-events-none">
                 <button className="custom-prev border-2 border-black hover:scale-110 transition-all duration-300 pointer-events-auto">❮</button>
                 <button className="custom-next border-2 border-black hover:scale-110 transition-all duration-300 pointer-events-auto">❯</button>
@@ -61,12 +149,32 @@ const Home = () => {
           {/* Hero Right (Nama Produk & Link) */}
           <div className="flex flex-col w-full md:w-1/2 border-l-0 md:border-l-3 md:border-t-0 border-t-3 md:mb-0 mb-15 py-5 justify-center items-center md:items-start text-center md:text-left ">
             <div className='bg-accent p-2 md:mt-[-130px] md:mb-10 border-4 md:border-l-0 border-matteblack'>
-              <h2 className='text-2xl md:text-3xl font-display font-bold'>Ospek Kit Collection</h2>    
+              <h2 className='text-2xl md:text-3xl font-display font-bold'>{heroConfig.title}</h2>    
             </div>  
             <div className='md:ml-10 p-4 ml-0 md:mt-0 mt-10'>
-              <h1 className="text-2xl md:text-3xl font-display font-bold">{products[activeIndex].name}</h1>
-              <p className="text-xl md:text-lg font-display mb-5">Produk terbaru dari KWU</p>
-              <Button text="See Product Details" align="left" to={products[activeIndex].link} className="mt-5" />
+              {loading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-4 bg-gray-300 rounded mb-4"></div>
+                  <div className="h-10 bg-gray-300 rounded"></div>
+                </div>
+              ) : heroConfig.products.length > 0 ? (
+                <>
+                  <h1 className="text-2xl md:text-3xl font-display font-bold">{heroConfig.products[activeIndex]?.name}</h1>
+                  <p className="text-xl md:text-lg font-display mb-5">{heroConfig.subtitle}</p>
+                  <Button 
+                    text="See Product Details" 
+                    align="left" 
+                    to={heroConfig.products[activeIndex]?.link || "/catalog"} 
+                    className="mt-5" 
+                  />
+                </>
+              ) : (
+                <div className="text-center">
+                  <h1 className="text-2xl md:text-3xl font-display font-bold">No Products Available</h1>
+                  <p className="text-xl md:text-lg font-display mb-5">Check back later</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -90,7 +198,8 @@ const Home = () => {
             </div> 
           </div>
         </section> */}
-        <div className="promo flex flex-col items-center bg-accent md:flex-row p-5 font-display"></div>
+        <div className="flex flex-col items-center bg-accent md:flex-row p-5 font-display"></div>
+        
         {/* Product Section */}
         <section className='border-t-3 relative overflow-hidden'>
           {/* Grid Background Pattern */}
@@ -116,7 +225,7 @@ const Home = () => {
             <div className="flex justify-center pt-12">
                 <h2 className="font-bricolage text-center text-4xl bg-accent px-6 py-3 border-3 border-matteblack shadow-matteblack transform rotate-[-1deg]">Our Catalog</h2>
             </div>
-            <LatestProducts />
+            <FeaturedProducts />
             <Button text="Browse More Products" to="/catalog" className=" mb-15 mt-10" />
           </div>
         </section>

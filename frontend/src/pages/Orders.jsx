@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 const Orders = () => {
   const { navigate } = useContext(ShopContext);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const { getOrdersByEmail, cancelOrder } = useCheckout();
+  const { getOrdersByEmail, cancelOrder, confirmReceiptOrder } = useCheckout();
   
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +82,25 @@ const Orders = () => {
       toast.error('Terjadi kesalahan saat membatalkan pesanan');
     } finally {
       setCancelling(null);
+    }
+  };
+
+  // Handle confirm receipt - User konfirmasi penerimaan pesanan
+  const handleConfirmReceipt = async (orderId, orderNumber) => {
+    if (!confirm(`Konfirmasi bahwa Anda sudah menerima pesanan ${orderNumber}?`)) return;
+
+    try {
+      const result = await confirmReceiptOrder(orderId, 'Pesanan sudah diterima dengan baik');
+      
+      if (result.success) {
+        toast.success('Konfirmasi penerimaan pesanan berhasil!');
+        loadOrders(); // Refresh orders
+      } else {
+        toast.error(result.message || 'Gagal konfirmasi penerimaan pesanan');
+      }
+    } catch (error) {
+      console.error('Error confirming receipt:', error);
+      toast.error('Terjadi kesalahan saat konfirmasi penerimaan pesanan');
     }
   };
 
@@ -171,7 +190,7 @@ const Orders = () => {
       <div className='container mx-auto px-4 py-8'>
         <div className='max-w-6xl mx-auto'>
           
-          {/* User Info */}
+          {/* User Info 
           {user && (
             <div className='bg-white border-2 border-matteblack rounded-xl p-6 mb-8 shadow-matteblack'>
               <h2 className='font-atemica text-xl mb-4'>Informasi Akun</h2>
@@ -186,7 +205,7 @@ const Orders = () => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Orders List */}
           {orders.length === 0 ? (
@@ -235,6 +254,36 @@ const Orders = () => {
                             </div>
                           </div>
                           
+                          {/* Payment Rejected Notification */}
+                          {order.paymentStatus === 'failed' && order.status === 'pending_confirmation' && (
+                            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-start gap-3">
+                                <div className="text-red-600 text-xl">❌</div>
+                                <div className="flex-1">
+                                  <p className="text-red-800 font-bold mb-1">Bukti Pembayaran Ditolak!</p>
+                                  <p className="text-red-700 text-sm mb-3">
+                                    Bukti pembayaran yang Anda upload tidak valid atau tidak jelas. Silakan upload ulang bukti pembayaran yang benar.
+                                  </p>
+                                  {order.adminNotes && (
+                                    <div className="text-sm text-red-600 bg-red-100 p-2 rounded mb-3">
+                                      <p className="font-medium">Alasan penolakan:</p>
+                                      <p>{order.adminNotes}</p>
+                                    </div>
+                                  )}
+                                  <div className="text-sm text-red-600 space-y-1">
+                                    <p className="font-medium">📋 Tips upload bukti pembayaran:</p>
+                                    <ul className="list-disc list-inside space-y-1 text-red-700">
+                                      <li>Pastikan foto jelas dan tidak blur</li>
+                                      <li>Foto harus menunjukkan nama penerima yang benar</li>
+                                      <li>Jumlah transfer harus sesuai dengan total pesanan</li>
+                                      <li>Screenshot dari aplikasi mobile banking resmi</li>
+                                    </ul>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Ready Pickup Notification */}
                           {order.status === 'ready_pickup' && (
                             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -317,6 +366,27 @@ const Orders = () => {
                                 navigate('/payment');
                               }}
                               className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2"
+                            />
+                          )}
+
+                          {/* Upload Ulang button - for rejected payment orders */}
+                          {order.paymentStatus === 'failed' && order.status === 'pending_confirmation' && (
+                            <Button
+                              text="Upload Ulang"
+                              onClick={() => {
+                                sessionStorage.setItem('currentOrderId', order._id);
+                                navigate('/payment');
+                              }}
+                              className="bg-orange-600 hover:bg-orange-700 text-white text-sm px-4 py-2 animate-pulse"
+                            />
+                          )}
+
+                          {/* Confirm Receipt button - for ready_pickup orders */}
+                          {order.status === 'ready_pickup' && (
+                            <Button
+                              text="Konfirmasi Diterima"
+                              onClick={() => handleConfirmReceipt(order._id, order.orderNumber)}
+                              className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2"
                             />
                           )}
                         </div>
