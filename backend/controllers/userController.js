@@ -3,6 +3,7 @@ import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import redisAuth from '../services/redisAuth.js';
+import crypto from 'crypto';
 
 const createToken = (id) => {
   const accessToken = jwt.sign({userId: id}, process.env.JWT_SECRET, {expiresIn: '15m'});
@@ -33,21 +34,17 @@ const loginUser = async (req, res) => {
   try {
     const {email, password} = req.body;
 
-    // 👤 STEP 1: Check if user exists
     const user = await userModel.findOne({email});
     if(!user) {
       console.error('User not found:', email);
       return res.json({success:false, message:"User does not exist"})
     }
 
-    // 🔐 STEP 2: Verify password
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     
     if(isPasswordCorrect) {
-      // 🎫 STEP 3: Generate tokens (access 15 menit + refresh 7 hari)
       const tokens = createToken(user._id);
       
-      // 💾 STEP 4: Save session to Redis dengan tokens
       const userData = {
         email: user.email,
         name: user.name,
@@ -65,7 +62,7 @@ const loginUser = async (req, res) => {
       setCookies(res, tokens.accessToken, tokens.refreshToken);
       res.json({
         success: true, 
-        message: "Login berhasil",
+        message: "Login successful",
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         user: userData
@@ -420,6 +417,107 @@ const refreshToken = async (req, res) => {
   }
 }
 
+// Forgot Password Route
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.json({ success: false, message: "Email is required" });
+    }
+
+    if (!validator.isEmail(email)) {
+      return res.json({ success: false, message: "Please enter a valid email" });
+    }
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.json({ success: false, message: "User with this email does not exist" });
+    }
+
+    // Generate reset token (simple 6-digit code)
+    const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Save reset token to user
+    await userModel.findByIdAndUpdate(user._id, {
+      resetPasswordToken: resetToken,
+      resetPasswordExpires: resetExpires
+    });
+
+    console.log(`✅ Reset token generated for ${email}: ${resetToken}`);
+    
+    // For now, we'll return the token in response (in production, send via email)
+    res.json({
+      success: true,
+      message: "Reset code generated successfully",
+      resetToken: resetToken, // Remove this in production ------
+      email: email
+    });
+
+  } catch (error) {
+    console.error('❌ Forgot password error:', error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Reset Password Route
+const resetPassword = async (req, res) => {
+  try {
+    const { email, resetToken, newPassword } = req.body;
+
+    if (!email || !resetToken || !newPassword) {
+      return res.json({ 
+        success: false, 
+        message: "Email, reset code, and new password are required" 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.json({ 
+        success: false, 
+        message: "Password must be at least 6 characters long" 
+      });
+    }
+
+    // Find user with valid reset token
+    const user = await userModel.findOne({
+      email: email,
+      resetPasswordToken: resetToken,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.json({ 
+        success: false, 
+        message: "Invalid or expired reset code" 
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password and clear reset token
+    await userModel.findByIdAndUpdate(user._id, {
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpires: null
+    });
+
+    console.log(`✅ Password reset successful for ${email}`);
+
+    res.json({
+      success: true,
+      message: "Password reset successfully"
+    });
+
+  } catch (error) {
+    console.error('❌ Reset password error:', error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 export { 
   loginUser, 
   registerUser, 
@@ -427,5 +525,7 @@ export {
   adminLogin, 
   getUserProfile,
   refreshToken,
-  changePassword
+  changePassword,
+  forgotPassword,
+  resetPassword
 }
