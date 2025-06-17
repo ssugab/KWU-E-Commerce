@@ -6,6 +6,13 @@ const addToCart = async (req, res) => {
     const { productId, size, quantity } = req.body;
     const userId = req.user.userId;
 
+    if (userId === 'admin') {
+      return res.json({ 
+        success: false, 
+        message: 'Admin cannot add item to cart'
+      });
+    }
+
     if (!productId || !quantity) {
       return res.json({ success: false, message: 'Product ID dan quantity harus diisi' });
     }
@@ -24,16 +31,16 @@ const addToCart = async (req, res) => {
         }]
       });
     } else {
-      // Cari apakah produk dengan size yang sama sudah ada
+      // Check if product with same size already exists
       const existingProductIndex = cart.products.findIndex(
         item => item.productId.toString() === productId && item.size === (size || 'default')
       );
 
       if (existingProductIndex > -1) {
-        // Jika sudah ada, tambah quantity
+        // If already exists, add quantity
         cart.products[existingProductIndex].quantity += quantity;
       } else {
-        // Jika belum ada, tambah produk baru
+        // If not exists, add new product
         cart.products.push({
           productId,
           size: size || 'default',
@@ -47,7 +54,7 @@ const addToCart = async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: 'Produk berhasil ditambahkan ke cart',
+      message: 'Product added to cart successfully',
       cart 
     });
 
@@ -57,10 +64,18 @@ const addToCart = async (req, res) => {
   }
 };
 
-// Mendapatkan cart user
+// Get cart user
 const getCart = async (req, res) => {
   try {
     const userId = req.user.userId;
+
+    if (userId === 'admin') {
+      return res.json({ 
+        success: true, 
+        cart: { products: [] },
+        message: 'Admin does not have cart'
+      });
+    }
 
     const cart = await cartModel.findOne({ userId }).populate('products.productId');
 
@@ -68,7 +83,7 @@ const getCart = async (req, res) => {
       return res.json({ 
         success: true, 
         cart: { products: [] },
-        message: 'Cart kosong'
+        message: 'Cart is empty'
       });
     }
 
@@ -83,16 +98,24 @@ const getCart = async (req, res) => {
   }
 };
 
-// Update quantity item di cart
+// Update quantity item in cart
 const updateCartQuantity = async (req, res) => {
   try {
     const { productId, size, quantity } = req.body;
     const userId = req.user.userId;
 
+    // ✅ Validation for admin user
+    if (userId === 'admin') {
+      return res.json({ 
+        success: false, 
+        message: 'Admin cannot update cart'
+      });
+    }
+
     const cart = await cartModel.findOne({ userId });
 
     if (!cart) {
-      return res.json({ success: false, message: 'Cart tidak ditemukan' });
+      return res.json({ success: false, message: 'Cart Not Found' });
     }
 
     const productIndex = cart.products.findIndex(
@@ -100,11 +123,11 @@ const updateCartQuantity = async (req, res) => {
     );
 
     if (productIndex === -1) {
-      return res.json({ success: false, message: 'Produk tidak ditemukan di cart' });
+      return res.json({ success: false, message: 'Product Not Found in Cart' });
     }
 
     if (quantity <= 0) {
-      // Hapus item jika quantity 0 atau kurang
+      // Remove item if quantity is 0 or less
       cart.products.splice(productIndex, 1);
     } else {
       // Update quantity
@@ -116,7 +139,7 @@ const updateCartQuantity = async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: 'Cart berhasil diupdate',
+      message: 'Cart updated successfully',
       cart 
     });
 
@@ -126,16 +149,24 @@ const updateCartQuantity = async (req, res) => {
   }
 };
 
-// Menghapus item dari cart
+// Remove item from cart
 const removeFromCart = async (req, res) => {
   try {
     const { productId, size } = req.body;
     const userId = req.user.userId;
 
+    // ✅ Validation for admin user
+    if (userId === 'admin') {
+      return res.json({ 
+        success: false, 
+        message: 'Admin cannot remove item from cart'
+      });
+    }
+
     const cart = await cartModel.findOne({ userId });
 
     if (!cart) {
-      return res.json({ success: false, message: 'Cart tidak ditemukan' });
+      return res.json({ success: false, message: 'Cart Not Found' });
     }
 
     cart.products = cart.products.filter(
@@ -147,7 +178,7 @@ const removeFromCart = async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: 'Item berhasil dihapus dari cart',
+      message: 'Item removed from cart',
       cart 
     });
 
@@ -157,10 +188,18 @@ const removeFromCart = async (req, res) => {
   }
 };
 
-// Menghapus semua item dari cart
+// Remove all items from cart
 const clearCart = async (req, res) => {
   try {
     const userId = req.user.userId;
+
+    // ✅ Validation for admin user
+    if (userId === 'admin') {
+      return res.json({ 
+        success: false, 
+        message: 'Admin cannot clear cart'
+      });
+    }
 
     await cartModel.findOneAndUpdate(
       { userId },
@@ -170,7 +209,7 @@ const clearCart = async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: 'Cart berhasil dikosongkan' 
+      message: 'Cart cleared successfully' 
     });
 
   } catch (error) {
