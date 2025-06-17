@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import {Routes, Route, useLocation, Navigate} from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
+import { Toaster, toast } from 'react-hot-toast'
 
 import Home from './pages/Home'
 import Cart from './pages/Cart'
@@ -14,6 +14,7 @@ import NotFound from './pages/NotFound'
 import Profile from './pages/User/profile'
 import Login from './pages/User/LoginPage'
 import SignUp from './pages/User/SignUpPage'
+import ForgotPassword from './pages/User/ForgotPassword'
 import Payment from './pages/Payment'
 import Orders from './pages/Orders'
 import Checkout from './pages/Checkout'
@@ -25,13 +26,16 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 
 // Protected Route Component for Admin
 const AdminProtectedRoute = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   
+  if(loading) return <div className='flex justify-center items-center h-screen'>Loading...</div>;
+
   if (!isAuthenticated) {
     return <Navigate to="/admin-login" replace />;
   }
   
   if (user?.role !== 'admin') {
+    toast.error('You are not authorized to access that page');
     return <Navigate to="/" replace />;
   }
   
@@ -70,6 +74,7 @@ const App = () => {
 
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<SignUp />} />
+          <Route path='/forgot-password' element={<ForgotPassword />} />
           
           {/* Admin Routes with Protection */}
           <Route path='/admin-login' element={<AdminLogin />} />
