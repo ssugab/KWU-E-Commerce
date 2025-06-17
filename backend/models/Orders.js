@@ -126,6 +126,11 @@ const orderSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  customerNotes: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   // Sistem notifikasi sederhana
   notifications: {
     readyPickupSent: {
