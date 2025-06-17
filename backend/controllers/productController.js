@@ -75,7 +75,7 @@ const getProduct = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Validasi format ID MongoDB
+    // Validate MongoDB ID format
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ 
         success: false, 
