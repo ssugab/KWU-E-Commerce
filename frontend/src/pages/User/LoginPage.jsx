@@ -109,9 +109,12 @@ const LoginPage = () => {
           </div>
           
           {currentState === "Login" && (
-            <p className="font-display text-sm text-gray-500 cursor-pointer hover:text-gray-700 hover:underline">
+            <Link 
+              to="/forgot-password"
+              className="font-display text-sm text-gray-500 cursor-pointer hover:text-gray-700 hover:underline"
+            >
               Forgot Password?
-            </p>
+            </Link>
           )}
        
           <Button 
