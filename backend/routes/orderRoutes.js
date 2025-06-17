@@ -11,7 +11,8 @@ import { createOrder,
   deleteOrder,
   markReadyPickup,
   getNewOrdersCount,
-  markNewOrdersNotified } 
+  markNewOrdersNotified,
+  confirmReceiptOrder } 
 from '../controllers/orderController.js';
 import { auth, requireAdmin } from '../middleware/authMiddleware.js';
 import { uploadPaymentProof as uploadMiddleware } from '../config/cloudinary.js';
@@ -22,6 +23,7 @@ const orderRouter = express.Router();
 orderRouter.post('/create', auth, createOrder);
 orderRouter.get('/my-orders', auth, getMyOrders);
 orderRouter.post('/:id/upload-proof', auth, uploadMiddleware.single('paymentProof'), uploadPaymentProof);
+orderRouter.put('/:id/confirm-receipt', auth, confirmReceiptOrder);
 
 // Public routes (accessible to all authenticated users)
 orderRouter.get('/:id', auth, getOrder);
