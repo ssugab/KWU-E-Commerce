@@ -29,6 +29,19 @@ const productSchema = new mongoose.Schema({
     type: Number,
     required: true,
     default: 0
+  },
+  highlight: {
+    type: Boolean,
+    default: false
+  },
+  isHero: {
+    type: Boolean,
+    default: false
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'out_of_stock'],
+    default: 'active'
   }
 }, {
   timestamps: true
