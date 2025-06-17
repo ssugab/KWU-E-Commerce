@@ -163,6 +163,14 @@ const Navbar = () => {
               
               {/* Cart & Profile - Right Side */}
               <div className='flex items-center gap-7'>
+                {isAdmin && (
+                  <NavLink 
+                  to='/admin/dashboard' 
+                  className='flex items-center gap-2 px-3 border-2 border-matteblack rounded-sm bg-offwhite hover:bg-accent hover:text-matteblack hover:shadow-matteblack transition-all duration-200 font-display text-sm'
+                >
+                  <span className='font-atemica pt-1'>Admin Dashboard</span>
+                </NavLink>
+                )}
                 {isAuthenticated ? (
                 <NavLink
                   to='/cart'
