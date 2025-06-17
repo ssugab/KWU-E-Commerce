@@ -11,10 +11,13 @@ export const API_ENDPOINTS = {
     REFRESH_TOKEN: `${API_URL}/user/refresh-token`,
     ADMIN_LOGIN: `${API_URL}/user/admin-login`,
     ADMIN_DASHBOARD: `${API_URL}/admin/dashboard`,
+    FORGOT_PASSWORD: `${API_URL}/user/forgot-password`,
+    RESET_PASSWORD: `${API_URL}/user/reset-password`,
   },
   CATALOG: {
     GET_ALL: `${API_URL}/catalog`,
     GET_ONE: (id) => `${API_URL}/catalog/${id}`,
+    GET_HERO: `${API_URL}/catalog/hero`,
     CREATE: `${API_URL}/catalog/create`,
     UPDATE: (id) => `${API_URL}/catalog/update/${id}`,
     DELETE: (id) => `${API_URL}/catalog/delete/${id}`,
@@ -35,10 +38,15 @@ export const API_ENDPOINTS = {
     UPDATE_STATUS: (id) => `${API_URL}/orders/${id}/status`,
     UPDATE_PAYMENT: (id) => `${API_URL}/orders/${id}/payment`,
     UPLOAD_PROOF: (id) => `${API_URL}/orders/${id}/upload-proof`,
+    CONFIRM_RECEIPT: (id) => `${API_URL}/orders/${id}/confirm-receipt`,
     CANCEL: (id) => `${API_URL}/orders/${id}/cancel`,
     DELETE: (id) => `${API_URL}/orders/${id}`,
     MARK_READY_PICKUP: (id) => `${API_URL}/orders/${id}/ready-pickup`,
     GET_NEW_COUNT: `${API_URL}/orders/admin/new-count`,
     MARK_NOTIFIED: `${API_URL}/orders/admin/mark-notified`
+  },
+  ADMIN: {
+    SALES_REPORT: `${API_URL}/admin/sales-report`,
+    ANALYTICS: `${API_URL}/admin/analytics`
   }
 };
