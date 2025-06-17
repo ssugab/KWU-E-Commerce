@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FaEye, FaCheck, FaTimes, FaDownload, FaBell, FaBoxOpen } from 'react-icons/fa'
+import { FaEye, FaCheck, FaTimes, FaDownload, FaBell, FaBoxOpen, FaTrash } from 'react-icons/fa'
 import Button from '../../components/Button'
 import { useCheckout } from '../../hooks/useCheckout'
 import { API_ENDPOINTS } from '../../config/api'
@@ -136,10 +136,28 @@ const OrderManagement = () => {
   // Tolak pembayaran
   const rejectPayment = async (orderId) => {
     try {
-      const result = await updateOrderStatus(orderId, 'pending_confirmation', 'Payment rejected - please upload valid proof');
+      // First update payment status to failed
+      const token = localStorage.getItem('token');
+      const paymentResponse = await fetch(API_ENDPOINTS.ORDERS.UPDATE_PAYMENT(orderId), {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          paymentStatus: 'failed'
+        })
+      });
+      
+      if (!paymentResponse.ok) {
+        throw new Error('Failed to update payment status');
+      }
+      
+      // Then update order status with rejection reason
+      const result = await updateOrderStatus(orderId, 'pending_confirmation', 'Bukti pembayaran ditolak - silakan upload bukti pembayaran yang valid');
       
       if (result.success) {
-        toast.warning('Payment rejected. Customer will be notified.');
+        toast.error('Payment rejected. Customer will be notified.');
         loadOrders(); // Refresh orders
         setShowOrderDetail(false);
       } else {
@@ -148,6 +166,49 @@ const OrderManagement = () => {
     } catch (error) {
       console.error('Error rejecting payment:', error);
       toast.error('Error rejecting payment');
+    }
+  };
+
+  // Delete Order
+  const deleteOrder = async (orderId, orderNumber) => {
+    if (!window.confirm(`Are you sure you want to delete order #${orderNumber}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(API_ENDPOINTS.ORDERS.DELETE(orderId), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Order deleted successfully!');
+        loadOrders(); // Refresh orders
+      } else {
+        toast.error(data.message || 'Failed to delete order');
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast.error('Error deleting order');
+    }
+  };
+
+  // Update order status via dropdown
+  const handleStatusChange = async (orderId, newStatus) => {
+    try {
+      const result = await updateOrderStatus(orderId, newStatus);
+      if (result.success) {
+        toast.success(`Order status updated to ${newStatus.replace('_', ' ')}`);
+        loadOrders(); // Refresh orders
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Error updating order status');
     }
   };
 
@@ -205,9 +266,6 @@ const OrderManagement = () => {
         </div>
         <div className="flex gap-3">
           <Button text="Refresh" onClick={loadOrders} className="flex items-center gap-2 bg-blue-600 text-white">
-            <FaDownload />
-          </Button>
-          <Button text="Export Orders" className="flex items-center gap-2">
             <FaDownload />
           </Button>
         </div>
@@ -270,7 +328,7 @@ const OrderManagement = () => {
                         {new Date(order.orderDate).toLocaleDateString('id-ID')}
                       </td>
                       <td className="py-4">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <button 
                             onClick={() => {
                               setSelectedOrder(order);
@@ -281,6 +339,21 @@ const OrderManagement = () => {
                           >
                             <FaEye className="text-xs" />
                           </button>
+                          
+                          {/* Status Change Dropdown */}
+                          <select
+                            value={order.status}
+                            onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                            className="text-xs px-2 py-1 border-2 border-matteblack bg-white font-display"
+                            title="Change Status"
+                          >
+                            <option value="pending_confirmation">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="ready_pickup">Ready Pickup</option>
+                            <option value="picked_up">Picked Up</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="expired">Expired</option>
+                          </select>
                           
                           {/* Quick Confirm Button - only for paid orders with proof */}
                           {order.paymentStatus === 'paid' && 
@@ -317,6 +390,15 @@ const OrderManagement = () => {
                               <FaBoxOpen className="text-xs" />
                             </button>
                           )}
+                          
+                          {/* Delete Order Button */}
+                          <button 
+                            onClick={() => deleteOrder(order._id, order._id.slice(-6))}
+                            className="p-2 bg-red-500 border-2 border-matteblack hover:shadow-matteblack-thin hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all hover:bg-red-600"
+                            title="Delete Order"
+                          >
+                            <FaTrash className="text-xs text-white" />
+                          </button>
                         </div>
                       </td>
                     </tr>

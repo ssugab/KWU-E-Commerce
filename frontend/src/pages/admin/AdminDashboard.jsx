@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FaUsers, FaShoppingBag, FaChartLine, FaCog, FaBox, FaBell, FaCheck } from 'react-icons/fa'
+import { FaShoppingBag, FaChartLine, FaCog, FaBox, FaCheck, FaDownload } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/Button'
 import { useAuth } from '../../context/AuthContext'
@@ -11,10 +11,10 @@ import ProductManagement from './ProductManagement'
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview')
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const navigate = useNavigate()
   
-  // Basic stats states (tanpa order management logic)
+  // Basic stats states
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalOrders: 0,
@@ -22,12 +22,21 @@ const AdminDashboard = () => {
     totalRevenue: 0
   })
 
-  // Sidebar menu items
+  // Sales report states
+  const [salesData, setSalesData] = useState({
+    dailySales: [],
+    topProducts: [],
+    recentOrders: [],
+    totalSalesThisMonth: 0,
+    totalOrdersThisMonth: 0
+  })
+
+  // Sidebar menu items - removed users, added reports
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: FaChartLine },
     { id: 'orders', label: 'Orders', icon: FaShoppingBag },
     { id: 'products', label: 'Products', icon: FaBox },
-    { id: 'users', label: 'Users', icon: FaUsers },
+    { id: 'reports', label: 'Sales Reports', icon: FaDownload },
     { id: 'settings', label: 'Settings', icon: FaCog },
   ]
 
@@ -53,15 +62,77 @@ const AdminDashboard = () => {
       const data = await response.json();
       
       if (data.success) {
+        const orders = data.orders || [];
         setStats(prev => ({
           ...prev,
-          totalOrders: data.orders?.length || 0,
-          totalRevenue: data.orders?.reduce((sum, order) => sum + (order.pricing?.total || 0), 0) || 0
+          totalOrders: orders.length,
+          totalRevenue: orders.reduce((sum, order) => sum + (order.pricing?.total || 0), 0)
         }));
+
+        // Calculate sales data for reports
+        calculateSalesData(orders);
       }
     } catch (error) {
       console.error('Error loading stats:', error);
     }
+  };
+
+  // Calculate sales data for reports
+  const calculateSalesData = (orders) => {
+    const now = new Date();
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Filter orders from this month
+    const thisMonthOrders = orders.filter(order => 
+      new Date(order.orderDate) >= thisMonth && 
+      ['confirmed', 'ready_pickup', 'picked_up'].includes(order.status)
+    );
+
+    // Calculate daily sales for last 7 days
+    const dailySales = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dayOrders = orders.filter(order => {
+        const orderDate = new Date(order.orderDate);
+        return orderDate.toDateString() === date.toDateString() &&
+               ['confirmed', 'ready_pickup', 'picked_up'].includes(order.status);
+      });
+      
+      dailySales.push({
+        date: date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' }),
+        sales: dayOrders.reduce((sum, order) => sum + (order.pricing?.total || 0), 0),
+        orders: dayOrders.length
+      });
+    }
+
+    // Calculate top products
+    const productSales = {};
+    orders.forEach(order => {
+      if (['confirmed', 'ready_pickup', 'picked_up'].includes(order.status)) {
+        order.orderItems?.forEach(item => {
+          const productName = item.productName;
+          if (!productSales[productName]) {
+            productSales[productName] = { quantity: 0, revenue: 0 };
+          }
+          productSales[productName].quantity += item.quantity;
+          productSales[productName].revenue += item.itemTotal || 0;
+        });
+      }
+    });
+
+    const topProducts = Object.entries(productSales)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    setSalesData({
+      dailySales,
+      topProducts,
+      recentOrders: orders.slice(0, 5),
+      totalSalesThisMonth: thisMonthOrders.reduce((sum, order) => sum + (order.pricing?.total || 0), 0),
+      totalOrdersThisMonth: thisMonthOrders.length
+    });
   };
 
   // Handle logout function
@@ -76,28 +147,10 @@ const AdminDashboard = () => {
     }
   }
 
-  // Load basic stats on component mount (route protection handles admin access)
+  // Load basic stats on component mount
   useEffect(() => {
-    loadStats(); // Load basic stats for overview
+    loadStats();
   }, [])
-
-  /* Statistic Card Komponen
-  const StatCard = ({ title, value, icon: Icon, trend }) => (
-    <div className="bg-offwhite border-3 border-matteblack p-6 hover:shadow-matteblack hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-display text-gray-600 text-sm">{title}</p>
-          <p className="font-bricolage text-2xl font-bold text-matteblack">{value}</p>
-          {trend && (
-            <p className="font-display text-sm text-green-600">+{trend}% from last month</p>
-          )}
-        </div>
-        <div className="bg-accent p-3 border-2 border-matteblack">
-          <Icon className="text-matteblack text-xl" />
-        </div>
-      </div>
-    </div>
-  )*/
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -107,33 +160,56 @@ const AdminDashboard = () => {
         <p className="font-display text-matteblack mt-2">Kelola toko online KWU BEM dengan mudah</p>
       </div>
 
-      {/* Statistic Grid 
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Users" 
-          value={stats.totalUsers} 
-          icon={FaUsers} 
-          trend="12"
-        />
-        <StatCard 
-          title="Total Orders" 
-          value={stats.totalOrders} 
-          icon={FaShoppingBag} 
-          trend="8"
-        />
-        <StatCard 
-          title="Total Products" 
-          value={stats.totalProducts} 
-          icon={FaBox} 
-          trend="5"
-        />
-        <StatCard 
-          title="Total Revenue" 
-          value={formatCurrency(stats.totalRevenue)} 
-          icon={FaChartLine} 
-          trend="15"
-        />
-      </div> */}
+        <div className="bg-offwhite border-3 border-matteblack p-6 hover:shadow-matteblack hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-display text-gray-600 text-sm">Total Orders</p>
+              <p className="font-bricolage text-2xl font-bold text-matteblack">{stats.totalOrders}</p>
+            </div>
+            <div className="bg-accent p-3 border-2 border-matteblack">
+              <FaShoppingBag className="text-matteblack text-xl" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-offwhite border-3 border-matteblack p-6 hover:shadow-matteblack hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-display text-gray-600 text-sm">Total Revenue</p>
+              <p className="font-bricolage text-2xl font-bold text-matteblack">{formatCurrency(stats.totalRevenue)}</p>
+            </div>
+            <div className="bg-accent p-3 border-2 border-matteblack">
+              <FaChartLine className="text-matteblack text-xl" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-offwhite border-3 border-matteblack p-6 hover:shadow-matteblack hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-display text-gray-600 text-sm">This Month</p>
+              <p className="font-bricolage text-2xl font-bold text-matteblack">{formatCurrency(salesData.totalSalesThisMonth)}</p>
+            </div>
+            <div className="bg-green-300 p-3 border-2 border-matteblack">
+              <FaDownload className="text-matteblack text-xl" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-offwhite border-3 border-matteblack p-6 hover:shadow-matteblack hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-display text-gray-600 text-sm">Orders This Month</p>
+              <p className="font-bricolage text-2xl font-bold text-matteblack">{salesData.totalOrdersThisMonth}</p>
+            </div>
+            <div className="bg-blue-300 p-3 border-2 border-matteblack">
+              <FaBox className="text-matteblack text-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Quick Actions */}
       <div className="bg-offwhite border-3 border-matteblack p-6">
@@ -154,11 +230,11 @@ const AdminDashboard = () => {
             <FaBox />
           </Button>
           <Button 
-            text="User Management" 
-            onClick={() => setActiveTab('users')}
+            text="Sales Reports" 
+            onClick={() => setActiveTab('reports')}
             className="flex items-center gap-2 justify-center bg-purple-600 text-white"
           >
-            <FaUsers />
+            <FaDownload />
           </Button>
         </div>
       </div>
@@ -178,7 +254,7 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border">
             <FaBox className="text-yellow-600" />
             <span className="font-display">Products need restocking</span>
-          </div>
+                    </div>
         </div>
       </div>
     </div>
@@ -187,20 +263,70 @@ const AdminDashboard = () => {
   const renderOrders = () => <OrderManagement />
   const renderProducts = () => <ProductManagement />
 
-  const renderUsers = () => (
+  // Sales Reports render function
+  const renderReports = () => (
     <div className="space-y-6">
-      <h1 className="font-bricolage text-3xl font-bold text-matteblack">User Management</h1>
-      <div className="bg-offwhite border-3 border-matteblack p-6">
-        <p className="font-display text-center text-gray-600">User management features coming soon...</p>
-        {user && (
-          <div className="mt-4 p-4 bg-blue-100 border-2 border-blue-300">
-            <h4 className="font-display-bold text-blue-800 mb-2">Current User:</h4>
-            <p className="font-display text-blue-700 text-sm">Email: {user.email}</p>
-            <p className="font-display text-blue-700 text-sm">Name: {user.name}</p>
-            <p className="font-display text-blue-700 text-sm">Role: {user.role}</p>
-          </div>
-        )}
+      <div className="flex justify-between items-center">
+        <h1 className="font-bricolage text-3xl font-bold text-matteblack">Sales Reports</h1>
       </div>
+
+      {/* Sales Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-offwhite border-3 border-matteblack p-6">
+          <h3 className="font-display-bold text-lg mb-2">Total Revenue</h3>
+          <p className="font-bricolage text-3xl font-bold text-green-600">{formatCurrency(stats.totalRevenue)}</p>
+          <p className="text-sm text-gray-600 mt-1">All time</p>
+        </div>
+        
+        <div className="bg-offwhite border-3 border-matteblack p-6">
+          <h3 className="font-display-bold text-lg mb-2">This Month</h3>
+          <p className="font-bricolage text-3xl font-bold text-blue-600">{formatCurrency(salesData.totalSalesThisMonth)}</p>
+          <p className="text-sm text-gray-600 mt-1">{salesData.totalOrdersThisMonth} orders</p>
+        </div>
+        
+        <div className="bg-offwhite border-3 border-matteblack p-6">
+          <h3 className="font-display-bold text-lg mb-2">Average Order</h3>
+          <p className="font-bricolage text-3xl font-bold text-purple-600">
+            {formatCurrency(stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0)}
+          </p>
+          <p className="text-sm text-gray-600 mt-1">Per order</p>
+        </div>
+      </div>
+
+      {/* Daily Sales Chart */}
+      <div className="bg-offwhite border-3 border-matteblack p-6">
+        <h3 className="font-bricolage text-xl font-bold mb-4">Sales Last 7 Days</h3>
+        <div className="grid grid-cols-7 gap-2">
+          {salesData.dailySales.map((day, index) => (
+            <div key={index} className="text-center">
+              <div className="bg-accent border-2 border-matteblack p-3 mb-2">
+                <p className="font-display text-xs">{day.date}</p>
+                <p className="font-bricolage font-bold text-sm">{day.orders}</p>
+                <p className="font-display text-xs">orders</p>
+              </div>
+              <p className="font-display text-xs text-gray-600">{formatCurrency(day.sales)}</p>
+                    </div>
+              ))}
+        </div>
+      </div>
+
+      {/* Top Products */}
+              <div className="bg-offwhite border-3 border-matteblack p-6">
+        <h3 className="font-bricolage text-xl font-bold mb-4">Top Selling Products</h3>
+        <div className="space-y-3">
+          {salesData.topProducts.map((product, index) => (
+            <div key={index} className="flex justify-between items-center p-3 bg-gray-50 border rounded">
+              <div>
+                <p className="font-display-bold">{product.name}</p>
+                <p className="text-sm text-gray-600">{product.quantity} sold</p>
+              </div>
+              <div className="text-right">
+                <p className="font-bricolage font-bold">{formatCurrency(product.revenue)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        </div>
     </div>
   )
 
@@ -223,7 +349,7 @@ const AdminDashboard = () => {
       case 'overview': return renderOverview()
       case 'orders': return renderOrders()
       case 'products': return renderProducts()
-      case 'users': return renderUsers()
+      case 'reports': return renderReports()
       case 'settings': return renderSettings()
       default: return renderOverview()
     }
@@ -295,9 +421,6 @@ const AdminDashboard = () => {
               {menuItems.find(item => item.id === activeTab)?.label || 'Dashboard'}
             </h1>
             <div className="flex items-center gap-4">
-              <button className="p-2 bg-accent border-2 border-matteblack hover:shadow-matteblack-thin hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all">
-                <FaBell className="text-matteblack" />
-              </button>
               <div className="bg-accent border-2 border-matteblack px-4 py-2">
                 <span className="font-display-bold text-matteblack">Admin User</span>
               </div>
