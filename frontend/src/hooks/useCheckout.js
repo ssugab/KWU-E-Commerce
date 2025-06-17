@@ -256,6 +256,33 @@ export const useCheckout = () => {
     }
   }, []);
 
+  // Confirm receipt order - User konfirmasi penerimaan pesanan
+  const confirmReceiptOrder = useCallback(async (orderId, notes = '') => {
+    if (!orderId) return { success: false, message: 'Order ID tidak valid' };
+
+    try {
+      const response = await axios.put(API_ENDPOINTS.ORDERS.CONFIRM_RECEIPT(orderId), {
+        notes: notes.trim()
+      });
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          order: response.data.order,
+          message: 'Konfirmasi penerimaan pesanan berhasil'
+        };
+      } else {
+        throw new Error(response.data.message);
+      }
+    } catch (error) {
+      console.error('❌ Error confirming receipt:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Gagal konfirmasi penerimaan pesanan'
+      };
+    }
+  }, []);
+
   // Clear current order
   const clearCurrentOrder = useCallback(() => {
     setCurrentOrder(null);
@@ -324,6 +351,7 @@ export const useCheckout = () => {
     updateOrderStatus,
     updatePaymentStatus,
     cancelOrder,
+    confirmReceiptOrder,
 
     // Utility functions
     validateOrderData,
