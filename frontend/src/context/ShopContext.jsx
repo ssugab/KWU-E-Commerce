@@ -18,9 +18,7 @@ const ShopContextProvider = (props) => {
 
   // Load cart from database when user logged in
   const loadCartFromDatabase = async () => {
-    console.log('🔍 LoadCartFromDatabase - isAuthenticated:', isAuthenticated);
-    console.log('🔍 LoadCartFromDatabase - products.length:', products.length);
-    
+
     const token = localStorage.getItem('token');
     if (!isAuthenticated || !token) {
       console.log('⚠️ User not authenticated or no token, skipping cart load');
@@ -70,16 +68,11 @@ const ShopContextProvider = (props) => {
     }
     
     setCart(cartItems);
-
-    // Sync ke database jika user login
-    console.log('🔍 AddToCart - isAuthenticated:', isAuthenticated);
-    console.log('🔍 AddToCart - Token from localStorage:', localStorage.getItem('token') ? 'exists' : 'not found');
     
     if (isAuthenticated) {
       try {
-        console.log('🔄 Attempting to add to database cart...');
         const response = await cartService.addToCart(productId, size, quantity);
-        console.log('✅ Successfully added to database cart:', response);
+        console.log('✅ Successfully added to cart:', response);
 
       } catch (error) {
         console.error('🚨 Error adding to database cart:', error);
@@ -200,16 +193,15 @@ const ShopContextProvider = (props) => {
 
   const getProducts = async () => {
     try {
-      console.log('🔄 Fetching products from:', API_ENDPOINTS.CATALOG.GET_ALL);
       
       const response = await axios.get(API_ENDPOINTS.CATALOG.GET_ALL);
       
       if(response.data.success){
-        console.log('✅ Success! Products data:', response.data.data);
         
         const mappedData = response.data.data.map(item => ({
           ...item,
-          id: item._id
+          id: item._id,
+          status: item.status
         }));
         
         setProducts(mappedData);
@@ -222,7 +214,6 @@ const ShopContextProvider = (props) => {
       console.log('🚨 Error fetching products:', error);
       console.log('🚨 Error response:', error.response);
       
-      // Check if error.response exists
       if (error.response && error.response.data && error.response.data.message) {
         toast.error(error.response.data.message);
       } else {

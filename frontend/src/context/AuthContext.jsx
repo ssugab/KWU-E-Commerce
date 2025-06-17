@@ -5,7 +5,6 @@ import { API_ENDPOINTS } from '../config/api';
 
 const AuthContext = createContext();
 
-
 const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -19,60 +18,134 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Setup axios interceptor untuk menambahkan token otomatis dan support cookies
-  useEffect(() => {
-    const setupAxiosInterceptor = () => {
-      // Set default config untuk cookies
-      axios.defaults.withCredentials = true;
+  // Axios interceptor untuk auto token refresh
+  let refreshPromise = null;
+
+  // Token refresh function
+  const refreshAccessToken = async () => {
+    try {
+      const refreshToken = authService.getRefreshToken();
+      if (!refreshToken) {
+        console.log('❌ No refresh token found');
+        return { success: false };
+      }
+
+      console.log('🔄 Refreshing access token...');
+      const response = await axios.post(API_ENDPOINTS.USER.REFRESH_TOKEN, {
+        refreshToken: refreshToken
+      }, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        
+        // Update tokens
+        localStorage.setItem('token', accessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
+        
+        console.log('✅ Token refreshed successfully');
+        return { success: true, accessToken };
+      }
       
-      axios.interceptors.request.use(
-        (config) => {
-          // Tetap kirim Authorization header sebagai fallback
-          const token = authService.getToken();
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-          }
+      return { success: false };
+    } catch (error) {
+      console.error('❌ Token refresh error:', error);
+      return { success: false };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsAuthenticated(false);
+      setUser(null);
+      localStorage.removeItem('userEmail');
+    }
+  };
+
+  useEffect(() => {
+    // Set default config untuk cookies
+    axios.defaults.withCredentials = true;
+    
+    // Request interceptor - add token to headers
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const token = authService.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        config.withCredentials = true;
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // Response interceptor - handle token refresh
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          const requestUrl = originalRequest?.url || '';
           
-          // Pastikan withCredentials true untuk semua request
-          config.withCredentials = true;
-          return config;
-        },
-        (error) => {
-          return Promise.reject(error);
-        }
-      );
-
-      // Response interceptor untuk handle token expired
-      axios.interceptors.response.use(
-        (response) => response,
-        (error) => {
-          if (error.response?.status === 401) {
-            const requestUrl = error.config?.url || '';
-            
-            // 🚫 Jangan auto logout untuk endpoint login dan admin-login
-            if (requestUrl.includes('/login') || requestUrl.includes('/admin-login')) {
-              console.log('🔓 AuthContext - 401 on login endpoint, not logging out');
-              return Promise.reject(error);
-            }
-            
-            // 🚫 Jangan auto logout jika user belum authenticated (avoid loop)
-            if (!isAuthenticated) {
-              console.log('🔓 AuthContext - 401 detected but user not authenticated, skipping logout');
-              return Promise.reject(error);
-            }
-            
-            console.log('🚫 AuthContext - 401 detected on protected endpoint, logging out...');
-            logout(); // Auto logout jika token expired pada protected endpoints
+          // Skip refresh untuk login endpoints
+          if (requestUrl.includes('/login') || requestUrl.includes('/admin-login') || requestUrl.includes('/forgot-password') || requestUrl.includes('/reset-password')) {
+            return Promise.reject(error);
           }
-          return Promise.reject(error);
+
+          // Skip jika user belum authenticated
+          if (!isAuthenticated) {
+            return Promise.reject(error);
+          }
+
+          originalRequest._retry = true;
+
+          try {
+            // Prevent multiple simultaneous refresh attempts
+            if (refreshPromise) {
+              await refreshPromise;
+              return axios(originalRequest);
+            }
+
+            // Start refresh process
+            refreshPromise = refreshAccessToken();
+            const result = await refreshPromise;
+            refreshPromise = null;
+
+            if (result.success) {
+              // Update token in original request
+              originalRequest.headers.Authorization = `Bearer ${result.accessToken}`;
+              return axios(originalRequest);
+            } else {
+              throw new Error('Refresh failed');
+            }
+          } catch (refreshError) {
+            refreshPromise = null;
+            console.log('🚫 Token refresh failed, logging out...');
+            logout();
+            return Promise.reject(refreshError);
+          }
         }
-      );
+        
+        return Promise.reject(error);
+      }
+    );
+
+    // Cleanup interceptors on unmount
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
     };
+  }, [isAuthenticated]); // Keep dependency untuk re-setup saat auth status berubah
 
-    setupAxiosInterceptor();
-  }, []);
-
-  // Check authentication status dan fetch user data saat aplikasi dimuat
+  // Check authentication status saat aplikasi dimuat
   useEffect(() => {
     const checkAuthStatus = async () => {
       const token = authService.getToken();
@@ -80,18 +153,15 @@ export const AuthProvider = ({ children }) => {
       
       if (token) {
         try {
-          console.log('🔄 AuthContext - Setting authenticated true and fetching profile...');
           setIsAuthenticated(true);
           await fetchUserProfile();
         } catch (error) {
-          console.error('❌ AuthContext - Error fetching user profile:', error);
-          // Jika error, hapus token yang invalid
+          console.error('❌ Error fetching user profile:', error);
           authService.logout();
           setIsAuthenticated(false);
           setUser(null);
         }
       } else {
-        console.log('⚠️ AuthContext - No token found, setting authenticated false');
         setIsAuthenticated(false);
         setUser(null);
       }
@@ -106,11 +176,9 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.get(API_ENDPOINTS.USER.PROFILE);
       
       if (response.data.success) {
-        // Backend mengirim user data dalam response.data.user
         const userData = response.data.user || response.data;
         setUser(userData);
         
-        // Save email user to localStorage for fallback in payment
         if (userData.email) {
           localStorage.setItem('userEmail', userData.email);
         }
@@ -118,37 +186,30 @@ export const AuthProvider = ({ children }) => {
         return userData;
       }
     } catch (error) {
-      console.error('❌ AuthContext - Error fetching user profile:', error);
+      console.error('❌ Error fetching user profile:', error);
       throw error;
     }
   };
 
   const login = async (email, password) => {
     const response = await authService.login(email, password);
-
     setIsAuthenticated(true);
-    
-    // Fetch user profile setelah login berhasil
     await fetchUserProfile();
-    
     return response;
   };
 
   const register = async (name, npm, email, phone, password) => {
     const response = await authService.register(name, npm, email, phone, password);
     setIsAuthenticated(true);
- 
     await fetchUserProfile();
-    
     return response;
   };
 
-  // Backward compatibility alias
-  const signup = register;
+  const signup = register; // Backward compatibility
 
   const adminLogin = async (email, password) => {
     try {
-      const response = await axios.post(`${API_ENDPOINTS.USER.ADMIN_LOGIN}`, {
+      const response = await axios.post(API_ENDPOINTS.USER.ADMIN_LOGIN, {
         email,
         password
       }, {
@@ -156,22 +217,17 @@ export const AuthProvider = ({ children }) => {
       });
       
       if (response.data.success) {
-        // Backend set cookies dan mengirim accessToken
-        const token = response.data.accessToken || response.data.token;
-        if (token) {
-          localStorage.setItem('token', token);
-          console.log('✅ AuthContext - Admin token saved to localStorage');
-          
-          // Verify token tersimpan
-          const savedToken = localStorage.getItem('token');
-          console.log('🔍 Token verification after save:', savedToken ? `${savedToken.substring(0, 20)}...` : 'NULL');
-        } else {
-          console.error('❌ No token received from admin login response');
+        const { accessToken, refreshToken } = response.data;
+        
+        if (accessToken) {
+          localStorage.setItem('token', accessToken);
+        }
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
         }
         
         setIsAuthenticated(true);
         
-        // Set admin user data dari response backend
         const userData = response.data.user || {
           email,
           role: 'admin',
@@ -179,30 +235,16 @@ export const AuthProvider = ({ children }) => {
         };
         setUser(userData);
         
-        console.log('✅ AuthContext - Admin login successful');
+        console.log('✅ Admin login successful');
         return response.data;
       }
       throw new Error(response.data.message);
     } catch (error) {
-      console.error('❌ AuthContext - Admin login error:', error);
+      console.error('❌ Admin login error:', error);
       throw error.response?.data?.message || error.message;
     }
   };
 
-  const logout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setIsAuthenticated(false);
-      setUser(null);
-      
-      localStorage.removeItem('userEmail');
-    }
-  };
-
-  // Function to refresh user data
   const refreshUser = async () => {
     if (isAuthenticated) {
       await fetchUserProfile();
@@ -210,9 +252,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const changePassword = async (currentPassword, newPassword) => {
-    console.log('🔄 AuthContext - Changing password...');
     const response = await authService.changePassword(currentPassword, newPassword);
-    console.log('✅ AuthContext - Password changed successfully');
     return response;
   };
 
@@ -222,12 +262,13 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
-    signup, // backward compatibility
+    signup,
     adminLogin,
     logout,
     refreshUser,
     fetchUserProfile,
-    changePassword
+    changePassword,
+    refreshAccessToken
   };
 
   return (
