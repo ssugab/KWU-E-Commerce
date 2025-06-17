@@ -44,7 +44,7 @@ export const useCheckout = () => {
     return { isValid: true, message: 'Valid' };
   }, []);
 
-  // Format data untuk dikirim ke backend
+  // Format data to be sent to backend
   const formatOrderData = useCallback((userData, cartItems, subtotal) => {
     const total = subtotal;
 
@@ -69,11 +69,11 @@ export const useCheckout = () => {
       },
       orderDate: new Date().toISOString(),
       source: 'web', // Track order source
-      userAgent: navigator.userAgent.substring(0, 200) // Untuk debugging
+      userAgent: navigator.userAgent.substring(0, 200) // For debugging
     };
   }, []);
 
-  // Create order - Simplified
+  // Create order 
   const createOrder = useCallback(async (userData, cartItems, subtotal) => {
     setIsLoading(true);
     
@@ -171,7 +171,7 @@ export const useCheckout = () => {
     }
   }, []);
 
-  // Update order status (untuk admin) dengan validasi
+  // Update order status (for admin) with validation
   const updateOrderStatus = useCallback(async (orderId, status, adminNotes = '') => {
     if (!orderId || !status) return { success: false, message: 'Parameter tidak lengkap' };
 
@@ -199,7 +199,7 @@ export const useCheckout = () => {
     }
   }, []);
 
-  // Update payment status dengan validasi
+  // Update payment status with validation
   const updatePaymentStatus = useCallback(async (orderId, paymentStatus, paymentMethod = null) => {
     if (!orderId || !paymentStatus) return { success: false, message: 'Parameter tidak lengkap' };
 
@@ -227,7 +227,7 @@ export const useCheckout = () => {
     }
   }, []);
 
-  // Cancel order dengan alasan
+  // Cancel order ( in production user should not be able to cancel order or cancelwith reason
   const cancelOrder = useCallback(async (orderId, reason = '') => {
     if (!orderId) return { success: false, message: 'Order ID tidak valid' };
 
@@ -256,7 +256,7 @@ export const useCheckout = () => {
     }
   }, []);
 
-  // Confirm receipt order - User konfirmasi penerimaan pesanan
+  // Confirm receipt order - User confirm receipt order
   const confirmReceiptOrder = useCallback(async (orderId, notes = '') => {
     if (!orderId) return { success: false, message: 'Order ID tidak valid' };
 
@@ -290,7 +290,7 @@ export const useCheckout = () => {
     sessionStorage.removeItem('orderCreatedAt');
   }, []);
 
-  // Get current order from session - Simplified
+  // Get current order from session 
   const getCurrentOrderFromSession = useCallback(async () => {
     const orderId = sessionStorage.getItem('currentOrderId');
     
@@ -300,26 +300,26 @@ export const useCheckout = () => {
         setCurrentOrder(result.order);
         return result.order;
       } else {
-        // Order tidak ditemukan di database, bersihkan session
+        // Order not found in database, clear session
         console.log('❌ Order not found in database, clearing session...');
         clearCurrentOrder();
       }
     }
     
-    // Fallback: Jika tidak ada order di session atau order tidak valid, coba ambil order terbaru user
+    // Fallback: If no order in session or order is not valid, try to get latest user order
     console.log('🔄 No valid order in session, trying to get latest order...');
     
-    // Cek apakah ada user yang login
+    // Check if user is logged in
     const userEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail');
     if (userEmail) {
       try {
-        const result = await getOrdersByEmail(userEmail, 1, 1); // Ambil 1 order terbaru
+        const result = await getOrdersByEmail(userEmail, 1, 1); // Get latest user order
         if (result.success && result.orders && result.orders.length > 0) {
           const latestOrder = result.orders[0];
-          // Hanya ambil order yang statusnya pending payment
+          // Only get order that is pending payment
           if (latestOrder.paymentStatus === 'pending') {
             console.log('✅ Found latest pending order:', latestOrder._id);
-            // Simpan ke session untuk next time
+            // Save to session for next time
             sessionStorage.setItem('currentOrderId', latestOrder._id);
             sessionStorage.setItem('orderCreatedAt', latestOrder.orderDate);
             
