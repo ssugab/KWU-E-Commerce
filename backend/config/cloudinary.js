@@ -5,35 +5,35 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 
-// Konfigurasi Cloudinary
+// Cloudinary Configuration
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_SECRET_KEY,
 });
 
-// Konfigurasi Storage untuk Payment Proofs
+// Configuration Storage for Payment Proofs
 const paymentStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'kwu-order-payment-proofs', // Folder khusus untuk bukti pembayaran
-    allowed_formats: ['jpg', 'jpeg', 'png'], // Format yang diizinkan
+    folder: 'kwu-order-payment-proofs', // Folder for payment proofs
+    allowed_formats: ['jpg', 'jpeg', 'png'], // Allowed formats
     transformation: [
-      { width: 800, height: 600, crop: 'limit' }, // Resize otomatis
-      { quality: 'auto' }, // Optimasi kualitas
+      { width: 800, height: 600, crop: 'limit' }, // Resize automatically
+      { quality: 'auto' }, // Optimize quality
     ],
     resource_type: 'image',
   },
 });
 
-// Multer middleware untuk upload
+// Multer middleware for upload
 const uploadPaymentProof = multer({
   storage: paymentStorage,
   limits: {
     fileSize: 5 * 1024 * 1024, // Max 5MB
   },
   fileFilter: (req, file, cb) => {
-    // Validasi file type
+    // Validate file type
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
