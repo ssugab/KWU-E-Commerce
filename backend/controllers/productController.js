@@ -1,4 +1,3 @@
-
 import { v2 as cloudinary } from 'cloudinary';
 import productModel from '../models/Product.js';
 
@@ -14,14 +13,28 @@ const getAllProducts = async (req, res) => {
       limit = 12, 
       category, 
       stock,
+      highlight,
+      hero,
       sort = 'createdAt',
-      order = 'desc'
+      order = 'desc',
+      status = 'active'
     } = req.query;
 
     // Build query
     const query = {};
+    
+    if (status !== 'all') {
+      query.status = status;
+    }
+    
     if (category) {
       query.category = category;
+    }
+    if (highlight !== undefined) {
+      query.highlight = highlight === 'true';
+    }
+    if (hero !== undefined) {
+      query.isHero = hero === 'true';
     }
 
     // Build sort
@@ -36,13 +49,10 @@ const getAllProducts = async (req, res) => {
       .sort(sortOptions)
       .skip(skip)
       .limit(parseInt(limit))
-      .select('name description price images sizes category stock createdAt');
+      .select('name description price images sizes category stock highlight isHero status createdAt');
 
     // Get total count for pagination
     const total = await productModel.countDocuments(query);
-
-    // const products = await productModel.find({});
-    //res.json({success: true, products, total})
 
     res.json({
       success: true,
@@ -93,7 +103,7 @@ const getProduct = async (req, res) => {
 // Create Product (Admin only)
 const createProduct = async (req, res) => {
   try {
-    const {name, description, price, category, sizes, stock} = req.body;
+    const {name, description, price, category, sizes, stock, highlight, isHero} = req.body;
     
     if (!req.files) {
       return res.status(400).json({ success: false, message: 'No files were uploaded.' });
@@ -146,6 +156,8 @@ const createProduct = async (req, res) => {
       category,
       sizes: checkSizes,
       stock,
+      highlight: Boolean(highlight),
+      isHero: Boolean(isHero),
       images: imagesUrl
     }
 
@@ -160,10 +172,9 @@ const createProduct = async (req, res) => {
   }
 };
 
-// Update Product (Admin only) -- Not done yet
+// Update Product (Admin only)
 const updateProduct = async (req, res) => {
   try {
-
     const { id } = req.params;
 
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -174,36 +185,130 @@ const updateProduct = async (req, res) => {
     }
 
     const product = await productModel.findById(id);
-    const { name, description, price, category, sizes, stock } = req.body;
-
-    // Check if there are new images
-    if(req.files) {
-
-    }
-
-    if(product) {
-      //Update product fields
-      product.name = name || product.name;
-      product.description = description || product.description;
-      product.price = price || product.price;
-      product.category = category || product.category;
-      product.sizes = sizes || product.sizes;
-      product.stock = stock || product.stock;
-
-      const updatedProduct = await product.save();
-      res.json({success: true, message: 'Product updated successfully', product: updatedProduct})
-    }
-    else {
+    
+    if (!product) {
       return res.status(404).json({success: false, message: 'Product not found'})
     }
 
-    // if(req.body.image !== undefined) { 
-    //   const publicId = product.image.split('/').pop().split('.')[0];
-    // }
+    const { 
+      name, 
+      description, 
+      price, 
+      category, 
+      sizes, 
+      stock, 
+      highlight, 
+      isHero,
+      status 
+    } = req.body;
+
+    // Update basic product fields
+    if (name !== undefined) product.name = name;
+    if (description !== undefined) product.description = description;
+    if (price !== undefined) product.price = Number(price);
+    if (category !== undefined) product.category = category;
+    if (stock !== undefined) product.stock = Number(stock);
+    
+    // Update highlight field
+    if (highlight !== undefined) {
+      product.highlight = Boolean(highlight);
+    }
+    
+    // Update isHero field
+    if (isHero !== undefined) {
+      product.isHero = Boolean(isHero);
+    }
+    
+    // Update status field
+    if (status !== undefined) {
+      if (['active', 'inactive', 'out_of_stock'].includes(status)) {
+        product.status = status;
+      } else {
+        return res.status(400).json({
+          success: false, 
+          message: 'Invalid status. Must be: active, inactive, or out_of_stock'
+        });
+      }
+    }
+    
+    // Handle sizes update
+    if (sizes !== undefined) {
+      if (typeof sizes === 'string') {
+        try {
+          const parsedSizes = JSON.parse(sizes);
+          if (Array.isArray(parsedSizes)) {
+            product.sizes = parsedSizes;
+          }
+        } catch (error) {
+          return res.status(400).json({success: false, message: 'Invalid sizes format'});
+        }
+      } else if (Array.isArray(sizes)) {
+        product.sizes = sizes;
+      }
+    }
+
+    // Handle existing images
+    const { existingImages } = req.body;
+    if (existingImages !== undefined) {
+      try {
+        const parsedExistingImages = typeof existingImages === 'string' 
+          ? JSON.parse(existingImages) 
+          : existingImages;
+        
+        if (Array.isArray(parsedExistingImages)) {
+          product.images = parsedExistingImages;
+        }
+      } catch (error) {
+        return res.status(400).json({success: false, message: 'Invalid existing images format'});
+      }
+    }
+
+    // Handle new image uploads if provided
+    if (req.files && Object.keys(req.files).length > 0) {
+      const newImages = [];
+      
+      // Look for newImage1, newImage2, etc.
+      for (let i = 1; i <= 4; i++) {
+        const imageField = `newImage${i}`;
+        if (req.files[imageField] && req.files[imageField][0]) {
+          newImages.push(req.files[imageField][0]);
+        }
+      }
+
+      if (newImages.length > 0) {
+        try {
+          const newImagesUrl = await Promise.all(
+            newImages.map(async (item) => {
+              const result = await cloudinary.uploader.upload(item.path, {
+                resource_type: 'image'
+              });
+              return result.secure_url;
+            })
+          );
+          
+          // Combine existing images with new images
+          product.images = [...product.images, ...newImagesUrl];
+        } catch (uploadError) {
+          console.error('Error uploading new images:', uploadError);
+          return res.status(500).json({
+            success: false, 
+            message: 'Error uploading new images'
+          });
+        }
+      }
+    }
+
+    const updatedProduct = await product.save();
+    
+    res.json({
+      success: true, 
+      message: 'Product updated successfully', 
+      product: updatedProduct
+    });
 
   } catch (error) {
     console.log('Error in updateProduct:', error);
-    res.status(500).json({success: false, message: error.message})
+    res.status(500).json({success: false, message: error.message});
   }
 };
 
@@ -235,10 +340,43 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+// Get Hero Products (untuk homepage)
+const getHeroProducts = async (req, res) => {
+  try {
+    const heroProducts = await productModel.find({
+      isHero: true,
+      status: 'active',
+      stock: { $gt: 0 }
+    })
+    .sort({ createdAt: -1 }) // Sort by newest first
+    .limit(5)
+    .select('name description price images category');
+
+    res.json({
+      success: true,
+      data: heroProducts.map(product => ({
+        id: product._id,
+        name: product.name,
+        image: product.images[0],
+        link: `/produk/${product._id}`,
+        originalProduct: product
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error getting hero products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching hero products'
+    });
+  }
+};
+
 export {
   getAllProducts,
   getProduct,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  getHeroProducts
 }; 

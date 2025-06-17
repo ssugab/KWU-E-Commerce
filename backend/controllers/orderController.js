@@ -179,7 +179,7 @@ const getAllOrders = async (req, res) => {
       }
     });
   } catch (error) {
-    handleError(res, error, 'Gagal mengambil semua pesanan');
+    handleError(res, error, 'Failed to get all orders');
   }
 };
 
@@ -190,11 +190,11 @@ const updateOrderStatus = async (req, res) => {
     const { status, adminNotes } = req.body;
     const order = await Order.findById(orderId);
     
-    if (!order) return sendResponse(res, 404, false, 'Pesanan tidak ditemukan');
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
 
     const validStatuses = ['pending_confirmation', 'confirmed', 'ready_pickup', 'picked_up', 'cancelled', 'expired'];
     if (!validStatuses.includes(status)) {
-      return sendResponse(res, 400, false, 'Status tidak valid');
+      return sendResponse(res, 400, false, 'Invalid status');
     }
 
     await order.updateStatus(status, 'admin', adminNotes);
@@ -204,9 +204,9 @@ const updateOrderStatus = async (req, res) => {
     }
 
     await order.populate('orderItems.productId');
-    sendResponse(res, 200, true, 'Status berhasil diperbarui', { order });
+    sendResponse(res, 200, true, 'Status updated successfully', { order });
   } catch (error) {
-    handleError(res, error, 'Gagal memperbarui status');
+    handleError(res, error, 'Failed to update status');
   }
 };
 
@@ -217,7 +217,7 @@ const updatePaymentStatus = async (req, res) => {
     const { paymentStatus, paymentMethod } = req.body;
     const order = await Order.findById(orderId);
     
-    if (!order) return sendResponse(res, 404, false, 'Pesanan tidak ditemukan');
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
 
     order.paymentStatus = paymentStatus;
     if (paymentMethod) {
@@ -227,19 +227,19 @@ const updatePaymentStatus = async (req, res) => {
     await order.save();
     await order.populate('orderItems.productId');
     
-    sendResponse(res, 200, true, 'Status pembayaran berhasil diperbarui', { order });
+    sendResponse(res, 200, true, 'Payment status updated successfully', { order });
   } catch (error) {
-    handleError(res, error, 'Gagal memperbarui status pembayaran');
+    handleError(res, error, 'Failed to update payment status');
   }
 };
 
 // Upload Payment Proof - Simplified
 const uploadPaymentProof = async (req, res) => {
   try {
-    if (!req.file) return sendResponse(res, 400, false, 'File tidak ditemukan');
+    if (!req.file) return sendResponse(res, 400, false, 'File not found');
 
     const order = await Order.findById(req.params.id);
-    if (!order) return sendResponse(res, 404, false, 'Pesanan tidak ditemukan');
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
 
     order.paymentProof = {
       imageUrl: req.file.path,
@@ -249,9 +249,9 @@ const uploadPaymentProof = async (req, res) => {
     order.paymentStatus = 'paid';
     
     await order.save();
-    sendResponse(res, 200, true, 'Bukti pembayaran berhasil diupload', { order });
+    sendResponse(res, 200, true, 'Payment proof uploaded successfully', { order });
   } catch (error) {
-    handleError(res, error, 'Gagal upload bukti pembayaran');
+    handleError(res, error, 'Failed to upload payment proof');
   }
 };
 
@@ -261,16 +261,16 @@ const cancelOrder = async (req, res) => {
     const { reason } = req.body;
     const order = await Order.findById(req.params.id);
     
-    if (!order) return sendResponse(res, 404, false, 'Pesanan tidak ditemukan');
-    if (order.status === 'picked_up') return sendResponse(res, 400, false, 'Pesanan sudah diambil');
-    if (order.status === 'cancelled') return sendResponse(res, 400, false, 'Pesanan sudah dibatalkan');
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
+    if (order.status === 'picked_up') return sendResponse(res, 400, false, 'Order already picked up');
+    if (order.status === 'cancelled') return sendResponse(res, 400, false, 'Order already cancelled');
 
     await order.updateStatus('cancelled', 'customer', reason || 'Dibatalkan');
     await order.populate('orderItems.productId');
     
-    sendResponse(res, 200, true, 'Pesanan berhasil dibatalkan', { order });
+    sendResponse(res, 200, true, 'Order cancelled successfully', { order });
   } catch (error) {
-    handleError(res, error, 'Gagal membatalkan pesanan');
+    handleError(res, error, 'Failed to cancel order');
   }
 };
 
@@ -278,11 +278,11 @@ const cancelOrder = async (req, res) => {
 const deleteOrder = async (req, res) => {
   try {
     const order = await Order.findByIdAndDelete(req.params.id);
-    if (!order) return sendResponse(res, 404, false, 'Pesanan tidak ditemukan');
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
     
-    sendResponse(res, 200, true, 'Pesanan berhasil dihapus');
+    sendResponse(res, 200, true, 'Order deleted successfully');
   } catch (error) {
-    handleError(res, error, 'Gagal menghapus pesanan');
+    handleError(res, error, 'Failed to delete order');
   }
 };
 
@@ -293,19 +293,19 @@ const markReadyPickup = async (req, res) => {
     const { adminNotes = '' } = req.body;
     const order = await Order.findById(orderId);
     
-    if (!order) return sendResponse(res, 404, false, 'Pesanan tidak ditemukan');
-    if (order.status !== 'confirmed') return sendResponse(res, 400, false, 'Order harus dikonfirmasi dulu');
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
+    if (order.status !== 'confirmed') return sendResponse(res, 400, false, 'Order must be confirmed first');
 
-    await order.updateStatus('ready_pickup', 'admin', adminNotes || 'Pesanan siap diambil');
+    await order.updateStatus('ready_pickup', 'admin', adminNotes || 'Order ready for pickup');
     if (adminNotes) {
       order.adminNotes = adminNotes;
       await order.save();
     }
 
     await order.populate('orderItems.productId');
-    sendResponse(res, 200, true, 'Pesanan siap pickup', { order });
+    sendResponse(res, 200, true, 'Order ready for pickup', { order });
   } catch (error) {
-    handleError(res, error, 'Gagal menandai siap pickup');
+    handleError(res, error, 'Failed to mark order as ready for pickup');
   }
 };
 
@@ -318,7 +318,7 @@ const getNewOrdersCount = async (req, res) => {
     });
     sendResponse(res, 200, true, 'Success', { count });
   } catch (error) {
-    handleError(res, error, 'Gagal menghitung pesanan baru');
+    handleError(res, error, 'Failed to get new orders count');
   }
 };
 
@@ -329,9 +329,47 @@ const markNewOrdersNotified = async (req, res) => {
       { 'notifications.newOrderNotified': false },
       { 'notifications.newOrderNotified': true }
     );
-    sendResponse(res, 200, true, 'Notifikasi ditandai');
+    sendResponse(res, 200, true, 'Notification marked');
   } catch (error) {
-    handleError(res, error, 'Gagal menandai notifikasi');
+    handleError(res, error, 'Failed to mark notification');
+  }
+};
+
+// Confirm Receipt - User confirms they received the order
+const confirmReceiptOrder = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    const { notes = '' } = req.body;
+    const userId = req.user?.userId || req.user?.id;
+    
+    const order = await Order.findById(orderId);
+    
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
+    
+    // Check if user owns this order
+    if (order.userId.toString() !== userId) {
+      return sendResponse(res, 403, false, 'You do not have access to this order');
+    }
+    
+    // Check if order is ready for confirmation
+    if (order.status !== 'ready_pickup') {
+      return sendResponse(res, 400, false, 'Order is not ready for confirmation');
+    }
+
+    // Update status to picked_up and add confirmation details
+    await order.updateStatus('picked_up', 'customer', notes || 'Order received by customer');
+    order.pickupDate = new Date();
+    
+    if (notes) {
+      order.customerNotes = notes;
+    }
+    
+    await order.save();
+    await order.populate('orderItems.productId');
+    
+    sendResponse(res, 200, true, 'Order confirmation successful', { order });
+  } catch (error) {
+    handleError(res, error, 'Failed to confirm order receipt');
   }
 };
 
@@ -346,7 +384,9 @@ export {
   uploadPaymentProof,
   cancelOrder,
   deleteOrder,
+  
   markReadyPickup,
   getNewOrdersCount,
-  markNewOrdersNotified
+  markNewOrdersNotified,
+  confirmReceiptOrder
 };
