@@ -16,7 +16,7 @@ const auth = async (req, res, next) => {
       console.log('❌ No token found in any source');
       return res.status(401).json({ 
         success: false, 
-        message: 'Token diperlukan untuk akses' 
+        message: 'Token is required for access' 
       });
     }
 
@@ -25,7 +25,7 @@ const auth = async (req, res, next) => {
         console.log('❌ Token is blacklisted (user logged out)');
         return res.status(401).json({ 
           success: false, 
-          message: 'Token sudah tidak valid, silakan login ulang' 
+          message: 'Token is no longer valid, please login again' 
         });
       }
 
@@ -35,14 +35,14 @@ const auth = async (req, res, next) => {
       if (!userId) {
         return res.status(401).json({ 
           success: false, 
-          message: 'Token tidak valid' 
+          message: 'Token is not valid' 
         });
       }
 
     const sessionResult = await redisAuth.getSession(userId);
     
       if (sessionResult.success) {
-        // Jika ada session, gunakan data dari Redis
+        // If there is a session, use data from Redis
         req.user = {
           userId: sessionResult.session.userId,
           email: sessionResult.session.email,
@@ -52,7 +52,7 @@ const auth = async (req, res, next) => {
           phone: sessionResult.session.phone
         };
       } else {
-      // Jika tidak ada session, tetap lanjut dengan data dari token
+      // If there is no session, continue with data from token
       req.user = { 
         userId: userId,
         id: userId // Compatibility
@@ -65,16 +65,16 @@ const auth = async (req, res, next) => {
     console.error('❌ Auth middleware error:', error.message);
     
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ success: false, message: 'Token tidak valid' });
+      return res.status(401).json({ success: false, message: 'Token is not valid' });
     } else if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
         success: false, 
-        message: 'Token sudah expired, silakan refresh atau login ulang',
-        needRefresh: true // Frontend bisa handle refresh token
+        message: 'Token has expired, please refresh or login again',
+        needRefresh: true // Frontend can handle refresh token
       });
     }
     
-    return res.status(401).json({ success: false, message: 'Autentikasi gagal' });
+    return res.status(401).json({ success: false, message: 'Authentication failed' });
   }
 };
 
@@ -84,14 +84,14 @@ const requireAdmin = async (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Autentikasi diperlukan' 
+        message: 'Authentication required' 
       });
     }
 
     if (req.user.role !== 'admin') {
       return res.status(403).json({ 
         success: false, 
-        message: 'Akses admin diperlukan' 
+        message: 'You can only access this page if you are an admin' 
       });
     }
 
@@ -113,11 +113,11 @@ const validateRefreshToken = async (req, res, next) => {
     if (!refreshToken) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Refresh token diperlukan' 
+        message: 'Refresh token is required' 
       });
     }
 
-    // Decode refresh token untuk get userId
+    // Decode refresh token to get userId
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET);
     const userId = decoded.userId;
 
@@ -127,7 +127,7 @@ const validateRefreshToken = async (req, res, next) => {
     if (!validation.success) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Refresh token tidak valid' 
+        message: 'Refresh token is not valid' 
       });
     }
 
@@ -140,7 +140,7 @@ const validateRefreshToken = async (req, res, next) => {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
         success: false, 
-        message: 'Refresh token tidak valid' 
+        message: 'Refresh token is not valid' 
       });
     }
     
