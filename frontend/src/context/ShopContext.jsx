@@ -76,11 +76,11 @@ const ShopContextProvider = (props) => {
 
       } catch (error) {
         console.error('🚨 Error adding to database cart:', error);
-        toast.error('Gagal menyimpan ke cart. Data tersimpan sementara.');
+        toast.error('Failed to add to cart. Data saved temporarily.');
       }
     } else {
       console.log('⚠️ User not authenticated - cart saved locally only');
-      toast('Produk ditambahkan ke cart lokal. Login untuk menyimpan permanen.', {
+      toast('Product added to local cart. Login to save permanently.', {
         icon: 'ℹ️'
       });
     }
@@ -121,17 +121,17 @@ const ShopContextProvider = (props) => {
   }
 
   const getCartTotal = () => {
-    return getCartAmount(); // Alias untuk getCartAmount
+    return getCartAmount(); // Alias for getCartAmount
   }
 
   const updateQuantity = async (productId, size, quantity) => {
     let cartItems = structuredClone(cart);
 
     if (quantity <= 0) {
-      // Remove item jika quantity 0 atau kurang
+      // Remove item if quantity is 0 or less
       if (cartItems[productId]) {
         delete cartItems[productId][size];
-        // Jika tidak ada size lain, hapus produk sepenuhnya
+        // If no other size, delete product completely
         if (Object.keys(cartItems[productId]).length === 0) {
           delete cartItems[productId];
         }
@@ -142,13 +142,13 @@ const ShopContextProvider = (props) => {
     
     setCart(cartItems);
 
-    // Sync ke database jika user login
+    // Sync to database if user is logged in
     if (isAuthenticated) {
       try {
         await cartService.updateCartQuantity(productId, size, quantity);
       } catch (error) {
         console.log('🚨 Error updating database cart:', error);
-        toast.error('Gagal mengupdate cart. Data tersimpan sementara.');
+        toast.error('Failed to update cart. Data saved temporarily.');
       }
     }
   }
@@ -158,7 +158,7 @@ const ShopContextProvider = (props) => {
     
     if (cartItems[productId]) {
       delete cartItems[productId][size];
-      // Jika tidak ada size lain, hapus produk sepenuhnya
+      // If no other size, delete product completely
       if (Object.keys(cartItems[productId]).length === 0) {
         delete cartItems[productId];
       }
@@ -166,13 +166,13 @@ const ShopContextProvider = (props) => {
     
     setCart(cartItems);
 
-    // Sync ke database jika user login
+    // Sync to database if user is logged in
     if (isAuthenticated) {
       try {
         await cartService.removeFromCart(productId, size);
       } catch (error) {
         console.log('🚨 Error removing from database cart:', error);
-        toast.error('Gagal menghapus dari cart. Data tersimpan sementara.');
+        toast.error('Failed to remove from cart. Data saved temporarily.');
       }
     }
   };
@@ -180,13 +180,13 @@ const ShopContextProvider = (props) => {
   const clearCart = async () => {
     setCart({});
 
-    // Sync ke database jika user login
+    // Sync to database if user is logged in
     if (isAuthenticated) {
       try {
         await cartService.clearCart();
       } catch (error) {
         console.log('🚨 Error clearing database cart:', error);
-        toast.error('Gagal mengosongkan cart di database.');
+        toast.error('Failed to clear cart in database.');
       }
     }
   };
@@ -222,30 +222,25 @@ const ShopContextProvider = (props) => {
     }
   }
 
-  // Load cart from database when user logged in
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     
     if (isAuthenticated && token && products.length > 0) {
-      console.log('✅ All conditions met: user authenticated, token exists, products loaded');
-      // Delay to prevent race condition
+      //console.log('All conditions met: user authenticated, token exists, products loaded');
       const timeoutId = setTimeout(() => {
         loadCartFromDatabase();
-      }, 500); // 500ms delay
+      }, 500);
       
       return () => clearTimeout(timeoutId);
     } else {
-      console.log('⚠️ Conditions not met for cart loading:', {
+      console.log('Conditions not met for cart loading:', {
         isAuthenticated,
         tokenExists: !!token,
         productsLength: products.length
       });
     }
   }, [isAuthenticated, products.length]);
-
-  /* useEffect(() => {
-    console.log('🛒 Cart state:', cart);
-  }, [cart]);*/ 
 
   useEffect(() => {
     getProducts();

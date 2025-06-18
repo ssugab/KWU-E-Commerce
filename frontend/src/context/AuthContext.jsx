@@ -18,10 +18,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Axios interceptor untuk auto token refresh
   let refreshPromise = null;
 
-  // Token refresh function
   const refreshAccessToken = async () => {
     try {
       const refreshToken = authService.getRefreshToken();
@@ -40,13 +38,12 @@ export const AuthProvider = ({ children }) => {
       if (response.data.success) {
         const { accessToken, refreshToken: newRefreshToken } = response.data;
         
-        // Update tokens
         localStorage.setItem('token', accessToken);
         if (newRefreshToken) {
           localStorage.setItem('refreshToken', newRefreshToken);
         }
         
-        console.log('✅ Token refreshed successfully');
+        console.log('Token refreshed successfully');
         return { success: true, accessToken };
       }
       
@@ -70,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Set default config untuk cookies
+    // Set default config for cookies
     axios.defaults.withCredentials = true;
     
     // Request interceptor - add token to headers
@@ -95,12 +92,10 @@ export const AuthProvider = ({ children }) => {
         if (error.response?.status === 401 && !originalRequest._retry) {
           const requestUrl = originalRequest?.url || '';
           
-          // Skip refresh untuk login endpoints
           if (requestUrl.includes('/login') || requestUrl.includes('/admin-login') || requestUrl.includes('/forgot-password') || requestUrl.includes('/reset-password')) {
             return Promise.reject(error);
           }
 
-          // Skip jika user belum authenticated
           if (!isAuthenticated) {
             return Promise.reject(error);
           }
@@ -108,7 +103,6 @@ export const AuthProvider = ({ children }) => {
           originalRequest._retry = true;
 
           try {
-            // Prevent multiple simultaneous refresh attempts
             if (refreshPromise) {
               await refreshPromise;
               return axios(originalRequest);
@@ -124,12 +118,19 @@ export const AuthProvider = ({ children }) => {
               originalRequest.headers.Authorization = `Bearer ${result.accessToken}`;
               return axios(originalRequest);
             } else {
+              const refreshToken = authService.getRefreshToken();
+              if (!refreshToken) {
+                logout();
+              }
               throw new Error('Refresh failed');
             }
           } catch (refreshError) {
             refreshPromise = null;
-            console.log('🚫 Token refresh failed, logging out...');
-            logout();
+            const refreshToken = authService.getRefreshToken();
+            if (!refreshToken) {
+              console.log('🚫 Token refresh failed, logging out...');
+              logout();
+            }
             return Promise.reject(refreshError);
           }
         }
@@ -143,13 +144,13 @@ export const AuthProvider = ({ children }) => {
       axios.interceptors.request.eject(requestInterceptor);
       axios.interceptors.response.eject(responseInterceptor);
     };
-  }, [isAuthenticated]); // Keep dependency untuk re-setup saat auth status berubah
+  }, [isAuthenticated]);
 
-  // Check authentication status saat aplikasi dimuat
+
   useEffect(() => {
     const checkAuthStatus = async () => {
       const token = authService.getToken();
-      console.log('🔍 AuthContext - Checking auth status, token:', token ? 'exists' : 'not found');
+      //console.log('🔍 AuthContext - Checking auth status, token:', token ? 'exists' : 'not found');
       
       if (token) {
         try {
@@ -198,8 +199,8 @@ export const AuthProvider = ({ children }) => {
     return response;
   };
 
-  const register = async (name, npm, email, phone, password) => {
-    const response = await authService.register(name, npm, email, phone, password);
+  const register = async (name, npm, email, phone, password, major) => {
+    const response = await authService.register(name, npm, email, phone, password, major);
     setIsAuthenticated(true);
     await fetchUserProfile();
     return response;
