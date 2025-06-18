@@ -25,9 +25,8 @@ const CreateProducts = ({ isOpen, onClose, onSuccess }) => {
 
   const categories = [
     'Shirts',
-    'T-Shirts',
     'Accessories',
-
+    'Ospek Kit',
   ]
 
   // Fetch current hero products count when modal opens
@@ -81,16 +80,22 @@ const CreateProducts = ({ isOpen, onClose, onSuccess }) => {
     setSizes(prev => prev.filter(size => size !== sizeToRemove));
   }
 
-  const handleImageUpload = (e) => {
+  // Handle remove image
+  const removeImage = (index) => {
+    setImages(prev => prev.filter((_, i) => i !== index))
+    setImagePreview(prev => prev.filter((_, i) => i !== index))
+  }
 
+  const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
 
-    if(files.length > 4 + images.length) {
+    if(files.length > 4 - images.length) {
       toast.error('You can only upload up to 4 images')
       return
     }
 
-    files.forEach(file => {
+    // Simple approach: just add files in order and let browser handle FileReader timing
+    files.forEach((file, fileIndex) => {
       if (file.type.startsWith('image/')) {
         // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
@@ -98,15 +103,17 @@ const CreateProducts = ({ isOpen, onClose, onSuccess }) => {
           return
         }
 
+        // Add to images array immediately (maintains order)
         setImages(prev => [...prev, file])
         
-        // Create preview
+        // Create preview with delay to ensure order
         const reader = new FileReader()
         reader.onload = (event) => {
           setImagePreview(prev => [...prev, {
             file: file,
             url: event.target.result,
-            name: file.name
+            name: file.name,
+            originalIndex: images.length + fileIndex // Store original position
           }])
         }
         reader.readAsDataURL(file)
@@ -114,12 +121,6 @@ const CreateProducts = ({ isOpen, onClose, onSuccess }) => {
         toast.error(`${file.name} is not a valid image file`)
       }
     })
-  }
-
-  // Handle remove image
-  const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index))
-    setImagePreview(prev => prev.filter((_, i) => i !== index))
   }
 
   // Form validation
@@ -293,10 +294,10 @@ const CreateProducts = ({ isOpen, onClose, onSuccess }) => {
               onChange={handleInputChange}
               className="w-full p-3 border-2 border-matteblack font-display h-24"
               placeholder="Enter product description..."
-              maxLength={500}
+              maxLength={1000}
             />
             <p className="text-xs text-gray-600 mt-1">
-              {formData.description.length}/500 characters
+              {formData.description.length}/1000 characters
             </p>
           </div>
 
@@ -368,24 +369,30 @@ const CreateProducts = ({ isOpen, onClose, onSuccess }) => {
 
             {/* Image Preview */}
             {imagePreview.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                {imagePreview.map((img, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={img.url}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-24 object-cover border-2 border-matteblack"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full text-xs hover:bg-red-700"
-                    >
-                      <FaTrash />
-                    </button>
-                    <p className="text-xs font-display mt-1 truncate">{img.name}</p>
-                  </div>
-                ))}
+              <div>
+                <p className="text-sm text-gray-600 mb-2 mt-2">📋 Image Upload Order:</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                  {imagePreview.map((img, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={img.url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-24 object-cover border-2 border-matteblack"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full text-xs hover:bg-red-700"
+                      >
+                        <FaTrash />
+                      </button>
+                      <div className="absolute -top-2 -left-2 bg-accent text-matteblack w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 border-matteblack">
+                        {index + 1}
+                      </div>
+                      <p className="text-xs font-display mt-1 truncate">{img.name}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

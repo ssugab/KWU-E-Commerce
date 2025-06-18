@@ -27,6 +27,7 @@ const EditProduct = ({ product, onUpdate, onClose }) => {
     'Shirts',
     'T-Shirts',
     'Accessories',
+    'Ospek Kit',
   ]
 
   // Pre-fill form with updated product data
@@ -95,6 +96,17 @@ const EditProduct = ({ product, onUpdate, onClose }) => {
     setSizes(prev => prev.filter(size => size !== sizeToRemove));
   }
 
+  // Handle remove new image
+  const removeImage = (index) => {
+    setImages(prev => prev.filter((_, i) => i !== index))
+    setImagePreview(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Handle remove existing image
+  const removeExistingImage = (index) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index))
+  }
+
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const totalImages = existingImages.length + images.length;
@@ -104,6 +116,7 @@ const EditProduct = ({ product, onUpdate, onClose }) => {
       return
     }
 
+    // Simple approach: process files in order
     files.forEach(file => {
       if (file.type.startsWith('image/')) {
         // Validate file size (max 5MB)
@@ -128,17 +141,6 @@ const EditProduct = ({ product, onUpdate, onClose }) => {
         toast.error(`${file.name} is not a valid image file`)
       }
     })
-  }
-
-  // Handle remove new image
-  const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index))
-    setImagePreview(prev => prev.filter((_, i) => i !== index))
-  }
-
-  // Handle remove existing image
-  const removeExistingImage = (index) => {
-    setExistingImages(prev => prev.filter((_, i) => i !== index))
   }
 
   // Form validation
@@ -297,10 +299,10 @@ const EditProduct = ({ product, onUpdate, onClose }) => {
               onChange={handleInputChange}
               className="w-full p-3 border-2 border-matteblack font-display h-24"
               placeholder="Enter product description..."
-              maxLength={500}
+              maxLength={1000}
             />
             <p className="text-xs text-gray-600 mt-1">
-              {formData.description.length}/500 characters
+              {formData.description.length}/1000 characters
             </p>
           </div>
 
@@ -366,6 +368,9 @@ const EditProduct = ({ product, onUpdate, onClose }) => {
                     >
                       <FaTrash />
                     </button>
+                    <div className="absolute -top-2 -left-2 bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 border-matteblack">
+                      {index + 1}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -399,24 +404,30 @@ const EditProduct = ({ product, onUpdate, onClose }) => {
 
             {/* New Image Preview */}
             {imagePreview.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                {imagePreview.map((img, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={img.url}
-                      alt={`New ${index + 1}`}
-                      className="w-full h-24 object-cover border-2 border-matteblack"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full text-xs hover:bg-red-700"
-                    >
-                      <FaTrash />
-                    </button>
-                    <p className="text-xs font-display mt-1 truncate">{img.name}</p>
-                  </div>
-                ))}
+              <div>
+                <p className="text-sm text-gray-600 mb-2 mt-2">📋 New Images Order:</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                  {imagePreview.map((img, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={img.url}
+                        alt={`New ${index + 1}`}
+                        className="w-full h-24 object-cover border-2 border-matteblack"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full text-xs hover:bg-red-700"
+                      >
+                        <FaTrash />
+                      </button>
+                      <div className="absolute -top-2 -left-2 bg-green-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 border-matteblack">
+                        {index + 1}
+                      </div>
+                      <p className="text-xs font-display mt-1 truncate">{img.name}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
