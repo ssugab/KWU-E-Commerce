@@ -9,7 +9,6 @@ import productRoutes from './routes/productRoutes.js';
 import cartRouter from './routes/cartRoutes.js';
 import orderRouter from './routes/orderRoutes.js';
 
-// Load environment variables
 dotenv.config();
 
 // Config
@@ -21,7 +20,7 @@ app.use(cors({
   origin: 'http://localhost:5173', // Frontend URL
   credentials: true // Allow cookies
 }));
-app.use(cookieParser()); // Parse cookies
+app.use(cookieParser());
 app.use(express.json());
 
 // Routes
