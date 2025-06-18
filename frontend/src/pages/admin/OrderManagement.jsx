@@ -8,14 +8,13 @@ import toast from 'react-hot-toast'
 const OrderManagement = () => {
   const { updateOrderStatus } = useCheckout()
   
-  // States
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showOrderDetail, setShowOrderDetail] = useState(false)
   const [newOrdersCount, setNewOrdersCount] = useState(0)
 
-  // Load orders dari backend
+  // Load orders from backend
   const loadOrders = async () => {
     setLoading(true);
     try {
@@ -31,6 +30,12 @@ const OrderManagement = () => {
       
       if (data.success) {
         setOrders(data.orders || []);
+        
+        // Auto-clear new orders count when orders are loaded (auto-mark notifications as read)
+        if (data.notificationsCleared > 0) {
+          setNewOrdersCount(0);
+          console.log(`📢 ${data.notificationsCleared} new orders notification has been read`);
+        }
       } else {
         toast.error('Failed to load orders');
       }
@@ -51,7 +56,7 @@ const OrderManagement = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        credentials: 'include' // Include cookies untuk hybrid auth
+        credentials: 'include' // Include cookies for hybrid auth
       });
       const data = await response.json();
       
@@ -65,39 +70,34 @@ const OrderManagement = () => {
     }
   };
 
-  // Mark orders as notified
-  const markOrdersNotified = async () => {
+  // Confirm payment (with stock reduction)
+  const confirmPayment = async (orderId, adminNotes = '') => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(API_ENDPOINTS.ORDERS.MARK_NOTIFIED, {
+      const response = await fetch(API_ENDPOINTS.ORDERS.CONFIRM_PAYMENT(orderId), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        credentials: 'include' // Include cookies untuk hybrid auth
+        body: JSON.stringify({ adminNotes })
       });
       
-      if (response.ok) {
-        setNewOrdersCount(0);
-        toast.success('Notifikasi pesanan baru telah dibaca');
-      }
-    } catch (error) {
-      console.error('Error marking orders notified:', error);
-    }
-  };
-
-  // Konfirmasi pembayaran
-  const confirmPayment = async (orderId) => {
-    try {
-      const result = await updateOrderStatus(orderId, 'confirmed', 'Payment confirmed by admin');
+      const data = await response.json();
       
-      if (result.success) {
-        toast.success('Payment confirmed successfully!');
+      if (data.success) {
+        toast.success('Payment confirmed');
+        if (data.stockUpdates && data.stockUpdates.length > 0) {
+          // Show stock update details
+          const stockInfo = data.stockUpdates.map(update => 
+            `${update.productName}: ${update.previousStock} → ${update.newStock}`
+          ).join(', ');
+          console.log('📦 Stock updates:', stockInfo);
+        }
         loadOrders(); // Refresh orders
         setShowOrderDetail(false);
       } else {
-        toast.error(result.message || 'Failed to confirm payment');
+        toast.error(data.message || 'Failed to confirm payment and reduce stock');
       }
     } catch (error) {
       console.error('Error confirming payment:', error);
@@ -121,7 +121,7 @@ const OrderManagement = () => {
       const data = await response.json();
       
       if (data.success) {
-        toast.success('Pesanan berhasil ditandai siap pickup! Customer akan mendapat notifikasi.');
+        toast.success('Order marked as ready for pickup! Customer will receive notification.');
         loadOrders(); // Refresh orders
         setShowOrderDetail(false);
       } else {
@@ -133,35 +133,27 @@ const OrderManagement = () => {
     }
   };
 
-  // Tolak pembayaran
-  const rejectPayment = async (orderId) => {
+  // Reject payment
+  const rejectPayment = async (orderId, adminNotes = '') => {
     try {
-      // First update payment status to failed
       const token = localStorage.getItem('token');
-      const paymentResponse = await fetch(API_ENDPOINTS.ORDERS.UPDATE_PAYMENT(orderId), {
+      const response = await fetch(API_ENDPOINTS.ORDERS.REJECT_PAYMENT(orderId), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
-          paymentStatus: 'failed'
-        })
+        body: JSON.stringify({ adminNotes })
       });
       
-      if (!paymentResponse.ok) {
-        throw new Error('Failed to update payment status');
-      }
+      const data = await response.json();
       
-      // Then update order status with rejection reason
-      const result = await updateOrderStatus(orderId, 'pending_confirmation', 'Bukti pembayaran ditolak - silakan upload bukti pembayaran yang valid');
-      
-      if (result.success) {
-        toast.error('Payment rejected. Customer will be notified.');
+      if (data.success) {
+        toast.error('Payment rejected. Customer will be asked to reupload.');
         loadOrders(); // Refresh orders
         setShowOrderDetail(false);
       } else {
-        toast.error(result.message || 'Failed to reject payment');
+        toast.error(data.message || 'Failed to reject payment');
       }
     } catch (error) {
       console.error('Error rejecting payment:', error);
@@ -212,12 +204,12 @@ const OrderManagement = () => {
     }
   };
 
-  // Load orders saat component mount
+  // Load orders when component mounts
   useEffect(() => {
     loadOrders();
     loadNewOrdersCount();
     
-    // Polling setiap 30 detik untuk notifikasi baru
+    // Polling every 30 seconds for new orders notification
     const interval = setInterval(() => {
       loadNewOrdersCount();
     }, 30000);
@@ -234,7 +226,6 @@ const OrderManagement = () => {
     }).format(amount)
   }
 
-  // Get status color
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending_confirmation': return 'bg-yellow-200 text-yellow-800 border-yellow-300'
@@ -255,12 +246,10 @@ const OrderManagement = () => {
           <h1 className="font-bricolage text-3xl font-bold text-matteblack">Order Management</h1>
           {/* Notifikasi Pesanan Baru */}
           {newOrdersCount > 0 && (
-            <div 
-              onClick={markOrdersNotified}
-              className="flex items-center gap-2 bg-red-100 text-red-800 px-3 py-2 rounded-lg border border-red-300 cursor-pointer hover:bg-red-200 transition-all"
-            >
+            <div className="flex items-center gap-2 bg-red-100 text-red-800 px-3 py-2 rounded-lg border border-red-300">
               <FaBell className="text-sm animate-pulse" />
-              <span className="text-sm font-medium">{newOrdersCount} Pesanan Baru</span>
+              <span className="text-sm font-medium">{newOrdersCount} New Orders</span>
+              <span className="text-xs opacity-75">(auto-cleared when refresh)</span>
             </div>
           )}
         </div>
