@@ -4,7 +4,6 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 dotenv.config();
 
-
 // Cloudinary Configuration
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
@@ -16,10 +15,10 @@ cloudinary.config({
 const paymentStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'kwu-order-payment-proofs', // Folder for payment proofs
-    allowed_formats: ['jpg', 'jpeg', 'png'], // Allowed formats
+    folder: 'kwu-order-payment-proofs',
+    allowed_formats: ['jpg', 'jpeg', 'png'],
     transformation: [
-      { width: 800, height: 600, crop: 'limit' }, // Resize automatically
+      { width: 800, height: 600, crop: 'limit' },
       { quality: 'auto' }, // Optimize quality
     ],
     resource_type: 'image',
