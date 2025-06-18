@@ -14,9 +14,18 @@ const SignUpPage = () => {
   const [name, setName] = useState('');
   const [npm, setNpm] = useState('');
   const [phone, setPhone] = useState('');
+  const [major, setMajor] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { navigate } = useContext(ShopContext);
   const { register } = useAuth();
+
+  const majorList = [
+      'Informatics', 
+      'Information Systems',
+      'Data Science',
+      'Digital Business',
+
+  ];
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,8 +47,8 @@ const SignUpPage = () => {
     setIsLoading(true);
 
     try {
-      if (!name || !npm || !email || !phone || !password) {
-        throw new Error("Please fill all fields!");
+      if (!name || !npm || !email || !phone || !password || !major) {
+        throw new Error("Please fill all fields including major!");
       }
 
       if (!validateEmail(email)) {
@@ -58,7 +67,7 @@ const SignUpPage = () => {
         throw new Error("Password must be at least 6 characters");
       }
 
-      await register(name, npm, email, phone, password);
+      await register(name, npm, email, phone, password, major);
       
       toast.success('Registration successful! Welcome!');
 
@@ -119,16 +128,25 @@ const SignUpPage = () => {
               disabled={isLoading}
             />
           </div>
-          {/* <div className="w-full">
+
+          {/* Major Dropdown */}
+          <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Major</label>
-            <input 
-              type="text" 
+            <select 
               value={major} 
               onChange={(e) => setMajor(e.target.value)} 
               className='w-full py-3 px-4 border-2 border-black bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(255,136,45,1)] transition-all' 
-              placeholder='ex: Sistem Informasi' 
-            />
-          </div> */}
+              disabled={isLoading}
+            >
+              <option value="">Choose your major</option>
+              {majorList.map((majorOption) => (
+                <option key={majorOption} value={majorOption}>
+                  {majorOption}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="w-full">
             <label className="block text-sm font-bold mb-2 text-gray-700">Email</label>
             <input 

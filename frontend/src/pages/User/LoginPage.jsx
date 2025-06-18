@@ -26,7 +26,7 @@ const LoginPage = () => {
 
     try {
       if (!email || !password ) {
-        throw new Error("Harap isi semua bidang yang wajib diisi!");
+        throw new Error("Please fill in all required fields!");
       }
 
       if (!validateEmail(email)) {

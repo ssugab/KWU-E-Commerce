@@ -3,7 +3,7 @@ import { ShopContext } from '../../context/ShopContext';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import Button from '../../components/Button';
-import { FaUser, FaEnvelope, FaPhone, FaIdCard, FaArrowLeft, FaEdit, FaLock, FaSignOutAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaIdCard, FaArrowLeft, FaEdit, FaLock, FaSignOutAlt, FaEye, FaEyeSlash, FaGraduationCap } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
@@ -270,6 +270,25 @@ const Profile = () => {
                     />
                   ) : (
                     <p className='py-2 px-3 bg-gray-50 border-2 border-gray-200 rounded-lg'>{user.phone}</p>
+                  )}
+                </div>
+
+                {/* Major Field */}
+                <div className="md:col-span-2">
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    <FaGraduationCap className='inline w-4 h-4 mr-2' />
+                    Major
+                  </label>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      name="major"
+                      value={formData.major}
+                      onChange={handleInputChange}
+                      className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-accent focus:outline-none transition-colors'
+                    />
+                  ) : (
+                    <p className='py-2 px-3 bg-gray-50 border-2 border-gray-200 rounded-lg'>{user.major || 'Major belum diatur'}</p>
                   )}
                 </div>
               </div>
