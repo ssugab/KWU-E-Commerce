@@ -9,7 +9,6 @@ import Product from './pages/Product'
 import MainLayouts from './components/Layouts/MainLayouts'
 import AdminLayouts from './components/Layouts/AdminLayouts'
 
-import Contact from './pages/Contact'
 import NotFound from './pages/NotFound'
 import Profile from './pages/User/profile'
 import Login from './pages/User/LoginPage'
@@ -63,7 +62,6 @@ const App = () => {
           <Route element={<MainLayouts />}>
             <Route path='/' element={<Home />} />
             <Route path='/catalog' element={<Catalog />} />
-            <Route path='/contact' element={<Contact />}/>
             <Route path='/product/:productId' element={<Product />} />
             <Route path='/cart' element={<Cart />} />
             <Route path='/orders' element={<Orders />} />
