@@ -13,11 +13,10 @@ const FeaturedProducts = () => {
   const loadFeaturedProducts = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_ENDPOINTS.CATALOG.GET_FEATURED}&status=active`);
+      const response = await fetch(`${API_ENDPOINTS.CATALOG.GET_FEATURED}?highlight=true&status=active&limit=4`);
       const data = await response.json();
       
       if (data.success && data.data) {
-        // Max 4 Products - filter hanya produk aktif
         const activeProducts = data.data.filter(product => product.status === 'active');
         setFeaturedProducts(activeProducts.slice(0, 4));
       } else {
@@ -42,7 +41,7 @@ const FeaturedProducts = () => {
     return (
       <div className='flex justify-center items-center p-10'>
         <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-4'></div>
-        <div className='text-lg text-gray-600'>Memuat produk unggulan...</div>
+        <div className='text-lg text-gray-600'>Loading featured products...</div>
       </div>
     );
   }
@@ -52,8 +51,8 @@ const FeaturedProducts = () => {
       <div className='flex justify-center items-center p-10'>
         <div className='text-center'>
           <div className='text-4xl mb-4'>⭐</div>
-          <div className='text-lg text-gray-600'>Belum ada produk unggulan</div>
-          <p className='text-sm text-gray-500 mt-2'>Admin belum menyetel produk untuk ditampilkan di homepage</p>
+          <div className='text-lg text-gray-600'>No featured products</div>
+          <p className='text-sm text-gray-500 mt-2'>Admin hasn't set any products to be displayed on homepage</p>
         </div>
       </div>
     );
