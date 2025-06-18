@@ -23,6 +23,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  major: {
+    type: String,
+    required: false,
+    enum: [
+      'Informatics', 
+      'Information Systems',
+      'Data Science',
+      'Digital Business',
+    ]
+  },
   cartData: [ 
     {
       quantity:{

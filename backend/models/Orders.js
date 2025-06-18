@@ -160,6 +160,48 @@ const orderSchema = new mongoose.Schema({
     },
     updatedBy: String,
     notes: String
+  }],
+  
+  // Stock Management
+  stockReduced: {
+    type: Boolean,
+    default: false
+  },
+  stockRestored: {
+    type: Boolean,
+    default: false
+  },
+  stockUpdateLog: [{
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product'
+    },
+    productName: String,
+    previousStock: Number,
+    newStock: Number,
+    quantity: Number,
+    action: {
+      type: String,
+      enum: ['reduce', 'restore']
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  stockRestoreLog: [{
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product'
+    },
+    productName: String,
+    previousStock: Number,
+    newStock: Number,
+    quantity: Number,
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
   }]
 }, {
   timestamps: true
