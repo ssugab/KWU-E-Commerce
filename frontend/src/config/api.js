@@ -18,6 +18,7 @@ export const API_ENDPOINTS = {
     GET_ALL: `${API_URL}/catalog`,
     GET_ONE: (id) => `${API_URL}/catalog/${id}`,
     GET_HERO: `${API_URL}/catalog/hero`,
+    GET_FEATURED: `${API_URL}/catalog`,
     CREATE: `${API_URL}/catalog/create`,
     UPDATE: (id) => `${API_URL}/catalog/update/${id}`,
     DELETE: (id) => `${API_URL}/catalog/delete/${id}`,
@@ -41,9 +42,11 @@ export const API_ENDPOINTS = {
     CONFIRM_RECEIPT: (id) => `${API_URL}/orders/${id}/confirm-receipt`,
     CANCEL: (id) => `${API_URL}/orders/${id}/cancel`,
     DELETE: (id) => `${API_URL}/orders/${id}`,
+    
+    CONFIRM_PAYMENT: (id) => `${API_URL}/orders/${id}/confirm-payment`,
+    REJECT_PAYMENT: (id) => `${API_URL}/orders/${id}/reject-payment`,
     MARK_READY_PICKUP: (id) => `${API_URL}/orders/${id}/ready-pickup`,
     GET_NEW_COUNT: `${API_URL}/orders/admin/new-count`,
-    MARK_NOTIFIED: `${API_URL}/orders/admin/mark-notified`
   },
   ADMIN: {
     SALES_REPORT: `${API_URL}/admin/sales-report`,
