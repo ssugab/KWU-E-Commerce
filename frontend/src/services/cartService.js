@@ -3,7 +3,6 @@ import { API_ENDPOINTS } from '../config/api';
 import authService from './authService';
 
 const cartService = {
-  // Helper untuk auth headers
   getAuthHeaders: () => {
     const token = authService.getToken();
     if (!token) {
@@ -18,7 +17,6 @@ const cartService = {
   // Get cart
   getCart: async () => {
     try {
-      // Cek token sebelum request
       if (!authService.getToken()) {
         throw new Error('Authentication required');
       }
@@ -28,7 +26,7 @@ const cartService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || error.message || 'Gagal mengambil cart';
+      throw error.response?.data?.message || error.message || 'Failed to get cart';
     }
   },
 
@@ -42,7 +40,7 @@ const cartService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || 'Gagal menambah ke cart';
+      throw error.response?.data?.message || 'Failed to add to cart';
     }
   },
 
@@ -56,7 +54,7 @@ const cartService = {
       });
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || 'Gagal update cart';
+      throw error.response?.data?.message || 'Failed to update cart';
     }
   },
 

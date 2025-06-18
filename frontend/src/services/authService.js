@@ -37,14 +37,15 @@ const authService = {
     }
   },
 
-  register: async (name, npm, email, phone, password) => {
+  register: async (name, npm, email, phone, password, major) => {
     try {
       const response = await axios.post(API_ENDPOINTS.USER.REGISTER, {
         name,
         npm,
         email,
         phone,
-        password
+        password,
+        major
       }, {
         withCredentials: true 
       });
@@ -81,9 +82,7 @@ const authService = {
       console.log('✅ AuthService - Logout API called, cookies cleared by backend');
     } catch (error) {
       console.error('❌ AuthService - Logout API error:', error);
-      // Continue to remove local token even if API error
     } finally {
-      // Remove tokens from localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
     }
@@ -102,8 +101,8 @@ const authService = {
   },
 
   // Backward compatibility alias
-  signup: function(name, npm, email, phone, password) {
-    return this.register(name, npm, email, phone, password);
+  signup: function(name, npm, email, phone, password, major) {
+    return this.register(name, npm, email, phone, password, major);
   },
 
   changePassword: async (currentPassword, newPassword) => {
