@@ -14,7 +14,7 @@ const ProductManagement = () => {
   const [showCreateProduct, setShowCreateProduct] = useState(false)
   const [showEditProduct, setShowEditProduct] = useState(false)
 
-  // Load products dari backend
+  // Load products from backend
   const loadProducts = async () => {
     setLoading(true)
     try {
@@ -92,11 +92,11 @@ const ProductManagement = () => {
 
   // Toggle hero status
   const toggleHero = async (productId, currentHero) => {
-    // Check if trying to add to hero when already at max limit
+
     if (!currentHero) {
       const currentHeroCount = products.filter(p => p.isHero).length;
       if (currentHeroCount >= 5) {
-        toast.error('Maksimal 5 produk yang bisa ditambahkan ke Hero Section!');
+        toast.error('Maximum 5 products can be added to Hero Section!');
         return;
       }
     }
@@ -167,7 +167,7 @@ const ProductManagement = () => {
     }
   }
 
-  // Load products saat component mount
+  // Load products when component mounts
   useEffect(() => {
     loadProducts()
   }, [])
