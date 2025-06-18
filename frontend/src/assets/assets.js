@@ -71,5 +71,7 @@ export const howToOrder = {
   step3: '3. Add to Cart',
   step4: '4. Checkout',
   step5: '5. Payment',
-  step6: '6. Wait for Confirmation'
+  step6: '6. Wait for Confirmation',
+  step7: '7. Pickup',
+  step8: '8. Confirm order and enjoy your product!'
 }
