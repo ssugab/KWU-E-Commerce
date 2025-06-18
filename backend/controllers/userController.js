@@ -6,26 +6,25 @@ import redisAuth from '../services/redisAuth.js';
 import crypto from 'crypto';
 
 const createToken = (id) => {
-  const accessToken = jwt.sign({userId: id}, process.env.JWT_SECRET, {expiresIn: '15m'});
+  const accessToken = jwt.sign({userId: id}, process.env.JWT_SECRET, {expiresIn: '1h'});
   const refreshToken = jwt.sign({userId: id}, process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET, {expiresIn: '7d'});
 
   return { accessToken, refreshToken };
 }
 
 const setCookies = (res, accessToken, refreshToken) => {
-  // 🍪 Set cookies untuk security (akan muncul di Postman)
   res.cookie('accessToken', accessToken, {
-    httpOnly: true,    // Tidak bisa diakses JavaScript (XSS protection)
-    secure: process.env.NODE_ENV === 'production', // HTTPS only di production
-    sameSite: 'lax',   // CSRF protection
-    maxAge: 15 * 60 * 1000 // 15 menit
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 1000 // 1 hour
   });
 
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 hari
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 }
 
@@ -55,7 +54,6 @@ const loginUser = async (req, res) => {
 
       await redisAuth.saveSession(user._id.toString(), userData, tokens);
       await redisAuth.saveRefreshToken(user._id.toString(), tokens.refreshToken);
-      await redisAuth.cacheUser(user._id.toString(), userData);
 
       console.log('✅ Login successful with refresh token for:', user.email);
 
@@ -81,7 +79,7 @@ const loginUser = async (req, res) => {
 // Register User Route
 const registerUser = async (req, res) => {
     try {
-        const {name, npm, email, phone, password, role} = req.body;
+        const {name, npm, email, phone, password, role, major} = req.body;
 
         const existingUserByEmail = await userModel.findOne({email});
         if(existingUserByEmail){
@@ -125,17 +123,18 @@ const registerUser = async (req, res) => {
           email: email.toLowerCase(),
           phone,
           password: hashedPassword,
-          role: role || 'user' // Default role is 'user' if not provided
+          role: role || 'user', // Default role is 'user' if not provided
+          major: major || null
         }) 
         
         // Save user to database
         const user = await newUser.save(); 
         console.log('User saved successfully:', email);
 
-        // 🎫 Auto login setelah register - Generate tokens
+        // Auto login after register - Generate tokens
         const tokens = createToken(user._id);
         
-        // 💾 Save session to Redis dengan tokens
+        // Save session to Redis with tokens
         const userData = {
           email: user.email,
           name: user.name,
@@ -146,13 +145,12 @@ const registerUser = async (req, res) => {
 
         await redisAuth.saveSession(user._id.toString(), userData, tokens);
         await redisAuth.saveRefreshToken(user._id.toString(), tokens.refreshToken);
-        await redisAuth.cacheUser(user._id.toString(), userData);
 
         setCookies(res, tokens.accessToken, tokens.refreshToken);
 
         res.json({
           success: true, 
-          message: "User berhasil dibuat", 
+          message: "User created successfully", 
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
           user: userData
@@ -169,7 +167,6 @@ const logOutUser = async (req, res) => {
   try {
     const {userId} = req.user;
     
-    // Get token from multiple sources (same as middleware)
     const token = req.headers.authorization?.split(' ')[1] || 
                   req.headers.token || 
                   req.cookies?.accessToken;
@@ -189,7 +186,6 @@ const logOutUser = async (req, res) => {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 
-    console.log('✅ Logout successful with token blacklist for user:', userId);
     res.json({
       success: true, 
       message: "Logout successful"
@@ -213,12 +209,18 @@ const getUserProfile = async (req, res) => {
       });
     }
 
-    const cachedUser = await redisAuth.getCachedUser(userId);
+    const sessionResult = await redisAuth.getSession(userId);
     
-    if (cachedUser.success) {
+    if (sessionResult.success) {
       return res.json({
         success: true,
-        user: cachedUser.data
+        user: {
+          email: sessionResult.session.email,
+          name: sessionResult.session.name,
+          role: sessionResult.session.role,
+          npm: sessionResult.session.npm,
+          phone: sessionResult.session.phone
+        }
       });
     }
 
@@ -237,11 +239,10 @@ const getUserProfile = async (req, res) => {
       name: user.name,
       role: user.role,
       npm: user.npm,
-      phone: user.phone
+      phone: user.phone,
+      major: user.major || null
     };
-    
-    await redisAuth.cacheUser(userId, userData);
-    
+ 
     res.json({
       success: true,
       user: userData
@@ -344,7 +345,6 @@ const adminLogin = async (req, res) => {
 
       await redisAuth.saveSession('admin', adminData, tokens);
       await redisAuth.saveRefreshToken('admin', tokens.refreshToken);
-      await redisAuth.cacheUser('admin', adminData);
 
       setCookies(res, tokens.accessToken, tokens.refreshToken);
 
@@ -384,7 +384,7 @@ const refreshToken = async (req, res) => {
       return res.json({success: false, message: "Invalid refresh token"});
     }
 
-    // 🎫 Generate new access token (15 menit baru)
+    // Generate new access token (1 hour duration)
     const newTokens = createToken(userId);
 
     // 💾 Update session dengan tokens baru

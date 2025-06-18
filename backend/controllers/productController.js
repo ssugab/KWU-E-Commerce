@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Get All Products (untuk catalog page)
+// Get All Products 
 const getAllProducts = async (req, res) => {
   try {
     const { 
@@ -100,7 +100,7 @@ const getProduct = async (req, res) => {
   }
 };
 
-// Create Product (Admin only)
+// Create Product - Admin only
 const createProduct = async (req, res) => {
   try {
     const {name, description, price, category, sizes, stock, highlight, isHero} = req.body;
@@ -120,20 +120,19 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No valid images were provided.' });
     }
 
-    let imagesUrl = await Promise.all(
-      images.map(async (item) => {
-        try {
-          const result = await cloudinary.uploader.upload(item.path, {
-            resource_type: 'image'
-          });
-          // console.log('Upload result:', result);
-          return result.secure_url;
-        } catch (uploadError) {
-          console.error('Error uploading to Cloudinary:', uploadError);
-          throw uploadError;
-        }
-      })
-    );
+    // Process images sequentially to maintain order
+    let imagesUrl = [];
+    for (const item of images) {
+      try {
+        const result = await cloudinary.uploader.upload(item.path, {
+          resource_type: 'image'
+        });
+        imagesUrl.push(result.secure_url);
+      } catch (uploadError) {
+        console.error('Error uploading to Cloudinary:', uploadError);
+        throw uploadError;
+      }
+    }
     
     let checkSizes;
     if (sizes) {
@@ -172,7 +171,7 @@ const createProduct = async (req, res) => {
   }
 };
 
-// Update Product (Admin only)
+// Update Product - Admin only
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -277,14 +276,14 @@ const updateProduct = async (req, res) => {
 
       if (newImages.length > 0) {
         try {
-          const newImagesUrl = await Promise.all(
-            newImages.map(async (item) => {
-              const result = await cloudinary.uploader.upload(item.path, {
-                resource_type: 'image'
-              });
-              return result.secure_url;
-            })
-          );
+          // Process images sequentially to maintain order
+          const newImagesUrl = [];
+          for (const item of newImages) {
+            const result = await cloudinary.uploader.upload(item.path, {
+              resource_type: 'image'
+            });
+            newImagesUrl.push(result.secure_url);
+          }
           
           // Combine existing images with new images
           product.images = [...product.images, ...newImagesUrl];
@@ -312,7 +311,7 @@ const updateProduct = async (req, res) => {
   }
 };
 
-// Delete Product (Admin only)
+// Delete Product - Admin only
 const deleteProduct = async (req, res) => {
   try {
 
@@ -340,7 +339,7 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-// Get Hero Products (untuk homepage)
+// Get Hero Products (for homepage)
 const getHeroProducts = async (req, res) => {
   try {
     const heroProducts = await productModel.find({

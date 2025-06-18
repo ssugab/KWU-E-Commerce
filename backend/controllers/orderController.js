@@ -13,18 +13,85 @@ const handleError = (res, error, defaultMessage = 'Server error') => {
   sendResponse(res, 500, false, message);
 };
 
-// Create Order - Simplified
+// Helper function untuk mengurangi stok produk
+const reduceProductStock = async (orderItems) => {
+  const stockUpdates = [];
+  
+  for (const item of orderItems) {
+    const product = await Product.findById(item.productId);
+    if (!product) {
+      throw new Error(`Product ${item.productId} tidak ditemukan`);
+    }
+    
+    // Cek apakah stok mencukupi
+    if (product.stock < item.quantity) {
+      throw new Error(`Stok ${product.name} tidak mencukupi. Stok tersedia: ${product.stock}, dibutuhkan: ${item.quantity}`);
+    }
+    
+    // Kurangi stok
+    const newStock = product.stock - item.quantity;
+    product.stock = newStock;
+    
+    // Update status produk jika stok habis
+    if (newStock === 0) {
+      product.status = 'out_of_stock';
+    }
+    
+    await product.save();
+    stockUpdates.push({
+      productId: product._id,
+      productName: product.name,
+      previousStock: product.stock + item.quantity,
+      newStock: newStock,
+      quantity: item.quantity
+    });
+  }
+  
+  return stockUpdates;
+};
+
+// Helper function to restore product stock (if order is cancelled)
+const restoreProductStock = async (orderItems) => {
+  const stockUpdates = [];
+  
+  for (const item of orderItems) {
+    const product = await Product.findById(item.productId);
+    if (!product) {
+      console.log(`⚠️ Product ${item.productId} tidak ditemukan saat restore stock`);
+      continue;
+    }
+    
+    const newStock = product.stock + item.quantity;
+    product.stock = newStock;
+    
+    // Update product status if it was out_of_stock
+    if (product.status === 'out_of_stock' && newStock > 0) {
+      product.status = 'active';
+    }
+    
+    await product.save();
+    stockUpdates.push({
+      productId: product._id,
+      productName: product.name,
+      previousStock: product.stock - item.quantity,
+      newStock: newStock,
+      quantity: item.quantity
+    });
+  }
+  
+  return stockUpdates;
+};
+
+// Create Order
 const createOrder = async (req, res) => {
   try {
     const { customer, items, pricing } = req.body;
     const userId = req.user?.userId || req.user?.id;
 
-    // Simple validation
     if (!customer?.name || !customer?.email || !customer?.phone || !items?.length || !userId) {
       return sendResponse(res, 400, false, 'Data is not complete');
     }
 
-    // Process order items
     const orderItems = [];
     let calculatedSubtotal = 0;
 
@@ -34,7 +101,6 @@ const createOrder = async (req, res) => {
         return sendResponse(res, 400, false, `Product ${item.productId} tidak ditemukan`);
       }
 
-      // Check stock if available
       if (product.stock !== undefined && product.stock < item.quantity) {
         return sendResponse(res, 400, false, `Stock ${product.name} is not enough. Stock available: ${product.stock}`);
       }
@@ -53,7 +119,6 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Create order
     const newOrder = await Order.create({
       userId,
       customer: {
@@ -77,10 +142,10 @@ const createOrder = async (req, res) => {
     });
 
     await newOrder.populate('orderItems.productId');
-    sendResponse(res, 201, true, 'Pesanan berhasil dibuat', { order: newOrder });
+    sendResponse(res, 201, true, 'Order created successfully', { order: newOrder });
 
   } catch (error) {
-    handleError(res, error, 'Gagal membuat pesanan');
+    handleError(res, error, 'Failed to create order');
   }
 };
 
@@ -88,15 +153,15 @@ const createOrder = async (req, res) => {
 const getOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('orderItems.productId');
-    if (!order) return sendResponse(res, 404, false, 'Pesanan tidak ditemukan');
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
     
     sendResponse(res, 200, true, 'Success', { order });
   } catch (error) {
-    handleError(res, error, 'Gagal mengambil pesanan');
+    handleError(res, error, 'Failed to get order');
   }
 };
 
-// Get Orders by Email - Simplified
+// Get Orders by Email
 const getOrdersByEmail = async (req, res) => {
   try {
     const { email } = req.params;
@@ -119,22 +184,22 @@ const getOrdersByEmail = async (req, res) => {
       }
     });
   } catch (error) {
-    handleError(res, error, 'Gagal mengambil pesanan');
+    handleError(res, error, 'Failed to get orders by email');
   }
 };
 
-// Get My Orders - Simplified
+// Get My Orders
 const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.userId });
     if (!orders) return sendResponse(res, 404, false, 'Order not found');
     sendResponse(res, 200, true, 'Success', { orders });
   } catch (error) {
-    handleError(res, error, 'Gagal mengambil pesanan');
+    handleError(res, error, 'Failed to get my orders');
   }
 };
 
-// Get All Orders - Simplified
+// Get All Orders - Admin only
 const getAllOrders = async (req, res) => {
   try {
     const { 
@@ -147,7 +212,13 @@ const getAllOrders = async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    // Build filter
+    // Auto-mark new orders as notified when admin views orders
+    const notificationUpdate = await Order.updateMany(
+      { 'notifications.newOrderNotified': false },
+      { 'notifications.newOrderNotified': true }
+    );
+
+    // Build filter for filtering orders by status
     const filter = {};
     if (status) filter.status = status;
     if (paymentStatus) filter.paymentStatus = paymentStatus;
@@ -158,7 +229,7 @@ const getAllOrders = async (req, res) => {
       ];
     }
 
-    // Build sort
+    // Build sort for sorting orders
     const sort = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
@@ -170,20 +241,21 @@ const getAllOrders = async (req, res) => {
 
     const total = await Order.countDocuments(filter);
 
-    sendResponse(res, 200, true, 'Success', {
+    sendResponse(res, 200, true, 'Orders loaded and notifications cleared', {
       orders,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / limit),
         totalOrders: total
-      }
+      },
+      notificationsCleared: notificationUpdate.modifiedCount
     });
   } catch (error) {
     handleError(res, error, 'Failed to get all orders');
   }
 };
 
-// Update order status - Admin only
+// Update order status (Admin only)
 const updateOrderStatus = async (req, res) => {
   try {
     const { id: orderId } = req.params;
@@ -195,6 +267,19 @@ const updateOrderStatus = async (req, res) => {
     const validStatuses = ['pending_confirmation', 'confirmed', 'ready_pickup', 'picked_up', 'cancelled', 'expired'];
     if (!validStatuses.includes(status)) {
       return sendResponse(res, 400, false, 'Invalid status');
+    }
+
+    // Handle stock when order is cancelled after confirmed
+    if (status === 'cancelled' && order.status === 'confirmed' && order.stockReduced) {
+      try {
+        const stockUpdates = await restoreProductStock(order.orderItems);
+        console.log('📦 Stock restored:', stockUpdates);
+        order.stockRestored = true;
+        order.stockRestoreLog = stockUpdates;
+      } catch (stockError) {
+        console.error('❌ Error restoring stock:', stockError.message);
+        // Continue cancel order even if restore stock fails
+      }
     }
 
     await order.updateStatus(status, 'admin', adminNotes);
@@ -210,7 +295,7 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-// Update payment status - Admin only
+// Update payment status (Admin only)
 const updatePaymentStatus = async (req, res) => {
   try {
     const { id: orderId } = req.params;
@@ -233,7 +318,7 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
-// Upload Payment Proof - Simplified
+// Upload Payment Proof
 const uploadPaymentProof = async (req, res) => {
   try {
     if (!req.file) return sendResponse(res, 400, false, 'File not found');
@@ -255,7 +340,7 @@ const uploadPaymentProof = async (req, res) => {
   }
 };
 
-// Cancel Order - Simplified
+// Cancel Order - Admin only (user might cancel their own order in future update)
 const cancelOrder = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -264,6 +349,19 @@ const cancelOrder = async (req, res) => {
     if (!order) return sendResponse(res, 404, false, 'Order not found');
     if (order.status === 'picked_up') return sendResponse(res, 400, false, 'Order already picked up');
     if (order.status === 'cancelled') return sendResponse(res, 400, false, 'Order already cancelled');
+
+    // Restore stock if order is confirmed
+    if (order.status === 'confirmed' && order.stockReduced) {
+      try {
+        const stockUpdates = await restoreProductStock(order.orderItems);
+        console.log('📦 Stock restored after cancellation:', stockUpdates);
+        order.stockRestored = true;
+        order.stockRestoreLog = stockUpdates;
+      } catch (stockError) {
+        console.error('❌ Error restoring stock:', stockError.message);
+        // Continue cancel order even if restore stock fails
+      }
+    }
 
     await order.updateStatus('cancelled', 'customer', reason || 'Dibatalkan');
     await order.populate('orderItems.productId');
@@ -274,7 +372,7 @@ const cancelOrder = async (req, res) => {
   }
 };
 
-// Delete Order - Simplified
+// Delete Order - Admin only
 const deleteOrder = async (req, res) => {
   try {
     const order = await Order.findByIdAndDelete(req.params.id);
@@ -309,7 +407,7 @@ const markReadyPickup = async (req, res) => {
   }
 };
 
-// Get orders that need admin notification (new orders)
+// Get orders that need admin notification (new orders) - Admin only
 const getNewOrdersCount = async (req, res) => {
   try {
     const count = await Order.countDocuments({
@@ -322,20 +420,7 @@ const getNewOrdersCount = async (req, res) => {
   }
 };
 
-// Mark new orders as notified
-const markNewOrdersNotified = async (req, res) => {
-  try {
-    await Order.updateMany(
-      { 'notifications.newOrderNotified': false },
-      { 'notifications.newOrderNotified': true }
-    );
-    sendResponse(res, 200, true, 'Notification marked');
-  } catch (error) {
-    handleError(res, error, 'Failed to mark notification');
-  }
-};
-
-// Confirm Receipt - User confirms they received the order
+// Confirm Receipt - User confirms they received the order products
 const confirmReceiptOrder = async (req, res) => {
   try {
     const { id: orderId } = req.params;
@@ -373,6 +458,86 @@ const confirmReceiptOrder = async (req, res) => {
   }
 };
 
+// Confirm Payment - Admin only
+const confirmPayment = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    const { adminNotes = '' } = req.body;
+    
+    const order = await Order.findById(orderId).populate('orderItems.productId');
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
+    
+    // Check if order can be confirmed
+    if (order.status === 'confirmed') {
+      return sendResponse(res, 400, false, 'Order already confirmed');
+    }
+    
+    if (order.status === 'cancelled' || order.status === 'expired') {
+      return sendResponse(res, 400, false, 'Order already cancelled or expired');
+    }
+    
+    if (order.paymentStatus !== 'paid') {
+      return sendResponse(res, 400, false, 'Payment proof not uploaded');
+    }
+    
+    try {
+
+      const stockUpdates = await reduceProductStock(order.orderItems);
+      console.log('📦 Stock updated:', stockUpdates);
+      
+      await order.updateStatus('confirmed', 'admin', adminNotes || 'Payment Confirmed');
+      
+      if (adminNotes) {
+        order.adminNotes = adminNotes;
+      }
+      
+      order.stockReduced = true;
+      order.stockUpdateLog = stockUpdates;
+      
+      await order.save();
+      await order.populate('orderItems.productId');
+      
+      sendResponse(res, 200, true, 'Payment confirmed and stock reduced successfully', { 
+        order,
+        stockUpdates
+      });
+      
+    } catch (stockError) {
+      return sendResponse(res, 400, false, `Failed to reduce stock: ${stockError.message}`);
+    }
+    
+  } catch (error) {
+    handleError(res, error, 'Failed to confirm payment');
+  }
+};
+
+// Reject Payment - Admin only
+const rejectPayment = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    const { adminNotes = '' } = req.body;
+    
+    const order = await Order.findById(orderId);
+    if (!order) return sendResponse(res, 404, false, 'Order not found');
+    
+    // Reset payment status
+    order.paymentStatus = 'failed';
+    await order.updateStatus('pending_confirmation', 'admin', adminNotes || 'Payment rejected, please upload payment proof again');
+    
+    if (adminNotes) {
+      order.adminNotes = adminNotes;
+    }
+    
+    await order.save();
+    await order.populate('orderItems.productId');
+    
+    sendResponse(res, 200, true, 'Payment rejected', { order });
+    
+  } catch (error) {
+    handleError(res, error, 'Failed to reject payment');
+  }
+};
+
 export {
   createOrder,
   getOrder,
@@ -385,8 +550,9 @@ export {
   cancelOrder,
   deleteOrder,
   
+  confirmPayment,
+  rejectPayment,
   markReadyPickup,
   getNewOrdersCount,
-  markNewOrdersNotified,
   confirmReceiptOrder
 };
