@@ -22,8 +22,8 @@ function Footer() {
         <div className="footer-right flex-1 flex justify-start gap-2 p-5 items-center md:block hidden">
          <a href="#" aria-label="Instagram" className='hover:bg-offwhite hover:rounded-full p-2'><FaInstagram /></a>
           <a href="#" aria-label="TikTok" className='hover:bg-offwhite hover:rounded-full p-2'><FaTiktok /></a>
-          <a href="#" aria-label="YouTube" className='hover:bg-offwhite hover:rounded-full p-2  '><FaYoutube /></a>
-          <a href="#" aria-label="Email" className='hover:bg-offwhite hover:rounded-full p-2'><FaEnvelope /></a> 
+          {/* <a href="#" aria-label="YouTube" className='hover:bg-offwhite hover:rounded-full p-2  '><FaYoutube /></a>
+          <a href="#" aria-label="Email" className='hover:bg-offwhite hover:rounded-full p-2'><FaEnvelope /></a> */}
         </div>
       </div>
       <div className="footer-bottom flex flex-col md:flex-row border-t-3 w-full justify-between items-center p-4">

@@ -21,9 +21,9 @@ const Navbar = () => {
     }, 2000);
   };
 
-  useEffect(() => { // untuk menutup sidebar menu saat ukuran layar lebih besar dari md screen
+  useEffect(() => { 
     const handleResize = () => {
-      if (window.innerWidth >= 768) { // md breakpoint in Tailwind
+      if (window.innerWidth >= 768) {
         setVisible(false);
       }
     };
@@ -44,8 +44,7 @@ const Navbar = () => {
         <ul className="flex gap-4 lg:gap-10 pl-4 lg:pl-10 font-atemica whitespace-nowrap overflow-hidden">
           {[
             { path: '/', label: 'Home' },
-            { path: '/catalog', label: 'Catalog' },
-            { path: '/contact', label: 'Contact' }
+            { path: '/catalog', label: 'Catalog' }
           ].map((item) => (
             <li key={item.path}>
               <NavLink
@@ -207,8 +206,7 @@ const Navbar = () => {
           <div className="flex flex-col gap-4 p-4 border-t-3">
             {[
               { path: '/', label: 'Home' },
-              { path: '/catalog', label: 'Catalog' },
-              { path: '/contact', label: 'Contact' }
+              { path: '/catalog', label: 'Catalog' }
             ].map((item) => (
               <div key={item.path} className='w-full border-b-3 font-atemica hover:bg-accent transition-colors duration-300' onClick={()=>setVisible(false)}>
                 <NavLink
