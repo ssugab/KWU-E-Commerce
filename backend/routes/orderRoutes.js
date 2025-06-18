@@ -9,9 +9,10 @@ import { createOrder,
   uploadPaymentProof,
   cancelOrder,
   deleteOrder,
+  confirmPayment,
+  rejectPayment,
   markReadyPickup,
   getNewOrdersCount,
-  markNewOrdersNotified,
   confirmReceiptOrder } 
 from '../controllers/orderController.js';
 import { auth, requireAdmin } from '../middleware/authMiddleware.js';
@@ -33,12 +34,16 @@ orderRouter.get('/user/:email', auth, getOrdersByEmail);
 orderRouter.get('/', auth, requireAdmin, getAllOrders);
 orderRouter.put('/:id/status', auth, requireAdmin, updateOrderStatus);
 orderRouter.put('/:id/payment', auth, requireAdmin, updatePaymentStatus);
+
+// Stock management routes - Admin only
+orderRouter.put('/:id/confirm-payment', auth, requireAdmin, confirmPayment);
+orderRouter.put('/:id/reject-payment', auth, requireAdmin, rejectPayment);
+
 orderRouter.put('/:id/cancel', auth, requireAdmin, cancelOrder);
 orderRouter.delete('/:id', auth, requireAdmin, deleteOrder);
 
 // Admin notification routes
 orderRouter.put('/:id/ready-pickup', auth, requireAdmin, markReadyPickup);
 orderRouter.get('/admin/new-count', auth, requireAdmin, getNewOrdersCount);
-orderRouter.put('/admin/mark-notified', auth, requireAdmin, markNewOrdersNotified);
 
 export default orderRouter;
