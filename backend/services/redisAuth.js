@@ -16,7 +16,7 @@ class RedisAuth {
         lastActivity: new Date().toISOString()
       };
 
-      // TTL 7 hari (604800 detik) - sesuai refresh token
+      // TTL 7 days (604800 seconds)
       await redis.setex(sessionKey, 604800, JSON.stringify(sessionData));
       
       console.log(`✅ Session saved for user: ${userData.email}`);
@@ -38,9 +38,15 @@ class RedisAuth {
 
       const parsed = JSON.parse(sessionData);
       
-      // Update last activity
-      parsed.lastActivity = new Date().toISOString();
-      await redis.setex(sessionKey, 604800, JSON.stringify(parsed));
+      // Only update lastActivity every 5 minutes to reduce Redis writes
+      const now = new Date().toISOString();
+      const lastUpdate = new Date(parsed.lastActivity);
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      
+      if (lastUpdate < fiveMinutesAgo) {
+        parsed.lastActivity = now;
+        await redis.setex(sessionKey, 604800, JSON.stringify(parsed));
+      }
 
       return { success: true, session: parsed };
     } catch (error) {
@@ -66,7 +72,7 @@ class RedisAuth {
   async blacklistToken(token) {
     try {
       const blacklistKey = `blacklist:${token}`;
-      await redis.setex(blacklistKey, 900, 'blacklisted'); // 15 minutes
+      await redis.setex(blacklistKey, 3600, 'blacklisted'); // 1 hour
       
       console.log('✅ Token blacklisted for immediate logout');
       return { success: true };
@@ -128,35 +134,6 @@ class RedisAuth {
       return { success: false, error: error.message };
     }
   }
-
-  async cacheUser(userId, userData) {
-    try {
-      const cacheKey = `user:${userId}`;
-      await redis.setex(cacheKey, 3600, JSON.stringify(userData));
-      return true;
-    } catch (error) {
-      console.error('❌ Cache user error:', error);
-      return false;
-    }
-  }
-
-  async getCachedUser(userId) {
-    try {
-      const cacheKey = `user:${userId}`;
-      const cached = await redis.get(cacheKey);
-      
-      if (cached) {
-        return { success: true, data: JSON.parse(cached) };
-      }
-      
-      return { success: false, message: 'Cache not found' };
-    } catch (error) {
-      console.error('❌ Get cached user error:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-
 
 }
 
