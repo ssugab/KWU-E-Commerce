@@ -16,7 +16,6 @@ const AdminDashboard = () => {
   
   // Basic stats states
   const [stats, setStats] = useState({
-    totalUsers: 0,
     totalOrders: 0,
     totalProducts: 24,
     totalRevenue: 0
@@ -37,7 +36,7 @@ const AdminDashboard = () => {
     { id: 'orders', label: 'Orders', icon: FaShoppingBag },
     { id: 'products', label: 'Products', icon: FaBox },
     { id: 'reports', label: 'Sales Reports', icon: FaDownload },
-    { id: 'settings', label: 'Settings', icon: FaCog },
+    // { id: 'settings', label: 'Settings', icon: FaCog },
   ]
 
   const formatCurrency = (amount) => {
@@ -157,7 +156,7 @@ const AdminDashboard = () => {
       {/* Welcome Banner */}
       <div className="bg-accent border-3 border-matteblack p-6 shadow-matteblack">
         <h1 className="font-bricolage text-3xl font-bold text-matteblack">Welcome to Admin Dashboard</h1>
-        <p className="font-display text-matteblack mt-2">Kelola toko online KWU BEM dengan mudah</p>
+        <p className="font-display text-matteblack mt-2">Manage your online store with ease</p>
       </div>
 
       {/* Stats Grid */}
@@ -254,7 +253,7 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border">
             <FaBox className="text-yellow-600" />
             <span className="font-display">Products need restocking</span>
-                    </div>
+           </div>
         </div>
       </div>
     </div>
@@ -305,7 +304,7 @@ const AdminDashboard = () => {
                 <p className="font-display text-xs">orders</p>
               </div>
               <p className="font-display text-xs text-gray-600">{formatCurrency(day.sales)}</p>
-                    </div>
+            </div>
               ))}
         </div>
       </div>
@@ -330,6 +329,7 @@ const AdminDashboard = () => {
     </div>
   )
 
+  /*  Settings coming soon
   const renderSettings = () => (
     <div className="space-y-6">
       <h1 className="font-bricolage text-3xl font-bold text-matteblack">Settings</h1>
@@ -342,7 +342,7 @@ const AdminDashboard = () => {
         </div>
       </div>
     </div>
-  )
+  ) */
 
   const renderContent = () => {
     switch (activeTab) {
@@ -350,7 +350,7 @@ const AdminDashboard = () => {
       case 'orders': return renderOrders()
       case 'products': return renderProducts()
       case 'reports': return renderReports()
-      case 'settings': return renderSettings()
+      //case 'settings': return renderSettings()
       default: return renderOverview()
     }
   }
