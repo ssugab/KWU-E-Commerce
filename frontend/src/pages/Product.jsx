@@ -15,9 +15,10 @@ const Product = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   
-  const [quantity, setQuantity] = useState(1); // State untuk quantity
+  const [quantity, setQuantity] = useState(1); // State for quantity
   const [selectedSize, setSelectedSize] = useState('');
   const [activeTab, setActiveTab] = useState('sizeGuide');
+  const [ showSizeGuide, setShowSizeGuide] = useState(null);
   const { isAuthenticated } = useAuth();
 
   const fetchProduct = async () => {
@@ -28,7 +29,12 @@ const Product = () => {
       const foundProduct = products.find(item => item.id === productId);
       setProduct(foundProduct);
 
-      // Set first image as default selectedImage
+      const shouldShowSizeGuide = foundProduct.category === 'Shirt' || foundProduct.category === 'Ospek Kit';
+      setShowSizeGuide(shouldShowSizeGuide);
+      
+      // Set default active tab based on whether size guide should be shown
+      setActiveTab(shouldShowSizeGuide ? 'sizeGuide' : 'description');
+      
       if (foundProduct && foundProduct.images && foundProduct.images.length > 0) {
         setSelectedImage(foundProduct.images[0]);
       }
@@ -39,7 +45,6 @@ const Product = () => {
 
   useEffect(() => {
     fetchProduct();
-    // Scroll to top saat halaman dimuat - instant untuk navigasi
     window.scrollTo(0, 0);
   }, [products, productId]);
 
@@ -62,33 +67,26 @@ const Product = () => {
   
 
   const handleAddToCart = () => {
-    // Validate size jika produk memiliki size options
     if (product.sizes && product.sizes.length > 0 && !selectedSize) {
       toast.error("Please select a size first!"); 
       return;
     }
-    
-    // Validasi stok
+
     if (quantity > (product.stock || 0)) {
       toast.error(`Insufficient stock! Only ${product.stock || 0} items available.`);
       return;
     }
-    
-    // Add to cart
+
     for (let i = 0; i < quantity; i++) {
       if (!isAuthenticated){
         toast.error("Please login to add to cart");
         return;
       } else {
         addToCart(product.id, selectedSize, quantity);
-      }
-     
+      }   
     }
-    
-    // Success message
     toast.success(`${quantity} ${product.name} added to cart!`);
-    
-    // Reset quantity (optional)
+
     setQuantity(1);
   }
 
@@ -241,26 +239,6 @@ const Product = () => {
                 />
               </div>
             </div>
-
-            {/* Additional Info 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>🚚</span>
-                <span>Free shipping for orders over Rp 100k</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>🔄</span>
-                <span>7-day return policy</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>✅</span>
-                <span>100% authentic products</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>📞</span>
-                <span>24/7 customer support</span>
-              </div>
-            </div> */}
             
           </div>
         </div>
@@ -269,6 +247,7 @@ const Product = () => {
       {/* Size Guide & Product Information Tabs */}
       <div className="mt-28 md:mt-8 md:mx-8 border-3 border-b-0 shadow-matteblack">
         <div className="flex flex-wrap gap-4 p-6 bg-offwhite3">
+          {showSizeGuide && (
           <button 
             className={`px-3 md:px-4 py-2 border-2 border-matteblack font-bricolage text-xs md:text-sm transition-all duration-300 ${
               activeTab === 'sizeGuide' 
@@ -279,6 +258,7 @@ const Product = () => {
           >
             📏 Size Guide
           </button>
+          )}
           <button 
             className={`px-3 md:px-4 py-2 border-2 border-matteblack font-bricolage text-xs md:text-sm transition-all duration-300 ${
               activeTab === 'description' 
@@ -289,43 +269,13 @@ const Product = () => {
           >
             📝 Description
           </button>
-          <button 
-            className={`px-3 md:px-4 py-2 border-2 border-matteblack font-bricolage text-xs md:text-sm transition-all duration-300 ${
-              activeTab === 'shipping' 
-                ? 'bg-accent shadow-matteblack transform translate-x-1 translate-y-1' 
-                : 'bg-white hover:bg-accent hover:shadow-matteblack hover:transform hover:translate-x-1 hover:translate-y-1'
-            }`}
-            onClick={() => setActiveTab('shipping')}
-          >
-            🚚 Shipping
-          </button>
-          <button 
-            className={`px-3 md:px-4 py-2 border-2 border-matteblack font-bricolage text-xs md:text-sm transition-all duration-300 ${
-              activeTab === 'reviews' 
-                ? 'bg-accent shadow-matteblack transform translate-x-1 translate-y-1' 
-                : 'bg-white hover:bg-accent hover:shadow-matteblack hover:transform hover:translate-x-1 hover:translate-y-1'
-            }`}
-            onClick={() => setActiveTab('reviews')}
-          >
-            ⭐ Reviews
-          </button>
-          <button 
-            className={`px-3 md:px-4 py-2 border-2 border-matteblack font-bricolage text-xs md:text-sm transition-all duration-300 ${
-              activeTab === 'care' 
-                ? 'bg-accent shadow-matteblack transform translate-x-1 translate-y-1' 
-                : 'bg-white hover:bg-accent hover:shadow-matteblack hover:transform hover:translate-x-1 hover:translate-y-1'
-            }`}
-            onClick={() => setActiveTab('care')}
-          >
-            🧼 Care
-          </button>
         </div>
 
         {/* Tab Content */}
         <div className="p-4 md:p-6 bg-offwhite2 border-3 border-l-0 border-r-0">
           
           {/* Size Guide Tab */}
-          {activeTab === 'sizeGuide' && (
+          {activeTab === 'sizeGuide' && showSizeGuide && (
             <div className="space-y-4 md:space-y-6">
               <h2 className="text-lg md:text-2xl font-atemica mb-3 md:mb-4 text-matteblack">📏 Size Guide</h2>
               
@@ -415,134 +365,6 @@ const Product = () => {
             </div>
           )}
 
-          {/* Shipping Info Tab */}
-          {activeTab === 'shipping' && (
-            <div className="space-y-3 md:space-y-4">
-              <h2 className="text-lg md:text-2xl font-atemica mb-3 md:mb-4 text-matteblack">🚚 Shipping Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                <div className="bg-green-50 p-3 md:p-4 border-2 border-matteblack">
-                  <h3 className="font-display-bold mb-2 text-green-800 text-sm md:text-base">📍 Delivery Areas:</h3>
-                  <ul className="font-display space-y-1 text-xs md:text-sm">
-                    <li>• Jakarta & surrounding areas</li>
-                    <li>• All major cities in Indonesia</li>
-                    <li>• Campus delivery available</li>
-                  </ul>
-                </div>
-                <div className="bg-blue-50 p-3 md:p-4 border-2 border-matteblack">
-                  <h3 className="font-display-bold mb-2 text-blue-800 text-sm md:text-base">⏰ Delivery Time:</h3>
-                  <ul className="font-display space-y-1 text-xs md:text-sm">
-                    <li>• Jakarta: 1-2 business days</li>
-                    <li>• Java: 2-3 business days</li>
-                    <li>• Other areas: 3-5 business days</li>
-                  </ul>
-                </div>
-                <div className="bg-yellow-50 p-3 md:p-4 border-2 border-matteblack">
-                  <h3 className="font-display-bold mb-2 text-yellow-800 text-sm md:text-base">💰 Shipping Costs:</h3>
-                  <ul className="font-display space-y-1 text-xs md:text-sm">
-                    <li>• Free shipping for orders over Rp 100.000</li>
-                    <li>• Jakarta: Rp 15.000</li>
-                    <li>• Other areas: Rp 25.000</li>
-                  </ul>
-                </div>
-                <div className="bg-purple-50 p-3 md:p-4 border-2 border-matteblack">
-                  <h3 className="font-display-bold mb-2 text-purple-800 text-sm md:text-base">📋 Order Processing:</h3>
-                  <ul className="font-display space-y-1 text-xs md:text-sm">
-                    <li>• Orders processed within 24 hours</li>
-                    <li>• Tracking number provided</li>
-                    <li>• SMS/Email notifications</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Reviews Tab */}
-          {activeTab === 'reviews' && (
-            <div className="space-y-4 md:space-y-6">
-              <h2 className="text-lg md:text-2xl font-atemica mb-3 md:mb-4 text-matteblack">⭐ Customer Reviews</h2>
-              
-              {/* Review Summary */}
-              <div className="bg-accent p-3 md:p-4 border-2 border-matteblack">
-                <div className="flex items-center gap-3 md:gap-4">
-                  <div className="text-2xl md:text-3xl font-display-bold">4.8</div>
-      <div>
-                    <div className="flex text-yellow-500 text-lg md:text-xl">★★★★★</div>
-                    <p className="font-display text-xs md:text-sm">Based on 24 reviews</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Individual Reviews */}
-              <div className="space-y-3 md:space-y-4">
-                <div className="bg-white p-3 md:p-4 border-2 border-matteblack">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex text-yellow-500 text-sm md:text-base">★★★★★</div>
-                    <span className="font-display-bold text-sm md:text-base">Sarah M.</span>
-                    <span className="text-xs md:text-sm text-gray-500">2 days ago</span>
-                  </div>
-                  <p className="font-display text-xs md:text-sm">"Kualitas sangat bagus! Ukuran pas dan bahan nyaman dipakai."</p>
-                </div>
-                
-                <div className="bg-white p-3 md:p-4 border-2 border-matteblack">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex text-yellow-500 text-sm md:text-base">★★★★☆</div>
-                    <span className="font-display-bold text-sm md:text-base">Ahmad R.</span>
-                    <span className="text-xs md:text-sm text-gray-500">1 week ago</span>
-                  </div>
-                  <p className="font-display text-xs md:text-sm">"Pengiriman cepat, packaging rapi. Recommended!"</p>
-                </div>
-              </div>
-
-              <button className="w-full bg-white border-2 border-matteblack p-2 md:p-3 font-display-bold hover:bg-accent hover:shadow-matteblack transition-all duration-300 text-sm md:text-base">
-                Write a Review
-              </button>
-            </div>
-          )}
-
-          {/* Care Instructions Tab */}
-          {activeTab === 'care' && (
-            <div className="space-y-3 md:space-y-4">
-              <h2 className="text-lg md:text-2xl font-atemica mb-3 md:mb-4 text-matteblack">🧼 Care Instructions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                <div className="bg-blue-50 p-3 md:p-4 border-2 border-matteblack">
-                  <h3 className="font-display-bold mb-2 text-blue-800 text-sm md:text-base">🌊 Washing:</h3>
-                  <ul className="font-display space-y-1 text-xs md:text-sm">
-                    <li>• Machine wash cold (30°C max)</li>
-                    <li>• Use mild detergent</li>
-                    <li>• Wash with similar colors</li>
-                    <li>• Turn inside out before washing</li>
-                  </ul>
-                </div>
-                <div className="bg-yellow-50 p-3 md:p-4 border-2 border-matteblack">
-                  <h3 className="font-display-bold mb-2 text-yellow-800 text-sm md:text-base">☀️ Drying:</h3>
-                  <ul className="font-display space-y-1 text-xs md:text-sm">
-                    <li>• Air dry recommended</li>
-                    <li>• Avoid direct sunlight</li>
-                    <li>• Do not tumble dry</li>
-                    <li>• Lay flat to maintain shape</li>
-                  </ul>
-                </div>
-                <div className="bg-green-50 p-3 md:p-4 border-2 border-matteblack">
-                  <h3 className="font-display-bold mb-2 text-green-800 text-sm md:text-base">🔥 Ironing:</h3>
-                  <ul className="font-display space-y-1 text-xs md:text-sm">
-                    <li>• Iron on low heat</li>
-                    <li>• Iron inside out</li>
-                    <li>• Use pressing cloth if needed</li>
-                    <li>• Avoid ironing prints directly</li>
-                  </ul>
-                </div>
-                <div className="bg-red-50 p-3 md:p-4 border-2 border-matteblack">
-                  <h3 className="font-display-bold mb-2 text-red-800 text-sm md:text-base">⚠️ Don't:</h3>
-                  <ul className="font-display space-y-1 text-xs md:text-sm">
-                    <li>• Don't bleach</li>
-                    <li>• Don't dry clean</li>
-                    <li>• Don't wring or twist</li>
-                    <li>• Don't use fabric softener</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -551,7 +373,7 @@ const Product = () => {
             <h3 className="text-2xl font-bold my-8">Similar Products</h3>
             <div className='bg-accent w-1/12 h-1 mt-[-30px] mb-10'></div>
             {product?.category ? (
-              <SimilarProducts category={product.category} />
+              <SimilarProducts category={product.category} currentProductId={product.id} />
             ) : (
               <p className="text-gray-500">Loading similar products...</p>
             )}

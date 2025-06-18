@@ -12,16 +12,34 @@ import { FaInstagram, FaTiktok, FaYoutube, FaEnvelope } from 'react-icons/fa';
 import { API_ENDPOINTS } from '../config/api';
 
 const Home = () => {
-  // State untuk hero configuration
+
   const [heroConfig, setHeroConfig] = useState({
     title: 'Ospek Kit Collection',
-    subtitle: 'Produk terbaru dari KWU',
+    subtitle: 'Latest Products from KWU',
     products: []
   });
   const [loading, setLoading] = useState(true);
-
-  // State untuk menyimpan produk yang sedang aktif
   const [activeIndex, setActiveIndex] = useState(0);
+  const defaultProducts = [
+    { 
+      images: [assets.ospekkit], 
+      name: "Ospek Kit 2025", 
+      link: "/produk",
+      id: "default-1"
+    },
+    { 
+      images: [assets.product1], 
+      name: "Merchandise Ospek 2025", 
+      link: "/produk",
+      id: "default-2"
+    },
+    { 
+      images: [assets.product2], 
+      name: "Notebook Ospek 2025", 
+      link: "/produk",
+      id: "default-3"
+    },
+  ];
 
   // Load hero products from backend
   useEffect(() => {
@@ -33,7 +51,7 @@ const Home = () => {
         if (result.success && result.data.length > 0) {
           setHeroConfig({
             title: 'Ospek Kit Collection',
-            subtitle: 'Produk terbaru dari KWU',
+            subtitle: 'New Ospek Kit Collection from KWU',
             products: result.data.map(product => ({
               ...product,
               images: product.originalProduct?.images || [product.image],
@@ -44,55 +62,17 @@ const Home = () => {
           // Fallback to default products if no hero products
           setHeroConfig({
             title: 'Ospek Kit Collection',
-            subtitle: 'Produk terbaru dari KWU',
-            products: [
-              { 
-                images: [assets.ospekkit], 
-                name: "Ospek Kit 2025", 
-                link: "/catalog",
-                id: "default-1"
-              },
-              { 
-                images: [assets.product1], 
-                name: "Merchandise Ospek 2025", 
-                link: "/catalog",
-                id: "default-2"
-              },
-              { 
-                images: [assets.product2], 
-                name: "Notebook Ospek 2025", 
-                link: "/catalog",
-                id: "default-3"
-              },
-            ]
+            subtitle: 'New Ospek Kit Collection from KWU',
+            products: defaultProducts,
           });
         }
       } catch (error) {
         console.error('Error loading hero products:', error);
-        // Fallback to default products
+        // Fallback to default products if error
         setHeroConfig({
           title: 'Ospek Kit Collection',
-          subtitle: 'Produk terbaru dari KWU',
-          products: [
-            { 
-              images: [assets.ospekkit], 
-              name: "Ospek Kit 2025", 
-              link: "/catalog",
-              id: "default-1"
-            },
-            { 
-              images: [assets.product1], 
-              name: "Merchandise Ospek 2025", 
-              link: "/catalog",
-              id: "default-2"
-            },
-            { 
-              images: [assets.product2], 
-              name: "Notebook Ospek 2025", 
-              link: "/catalog",
-              id: "default-3"
-            },
-          ]
+          subtitle: 'New Ospek Kit Collection from KWU',
+          products: defaultProducts,
         });
       } finally {
         setLoading(false);
@@ -146,7 +126,7 @@ const Home = () => {
             </div>
           </div>    
 
-          {/* Hero Right (Nama Produk & Link) */}
+          {/* Hero Right (Product Name & Link) */}
           <div className="flex flex-col w-full md:w-1/2 border-l-0 md:border-l-3 md:border-t-0 border-t-3 md:mb-0 mb-15 py-5 justify-center items-center md:items-start text-center md:text-left ">
             <div className='bg-accent p-2 md:mt-[-130px] md:mb-10 border-4 md:border-l-0 border-matteblack'>
               <h2 className='text-2xl md:text-3xl font-display font-bold'>{heroConfig.title}</h2>    
@@ -161,10 +141,10 @@ const Home = () => {
               ) : heroConfig.products.length > 0 ? (
                 <>
                   <h1 className="text-2xl md:text-3xl font-display font-bold">{heroConfig.products[activeIndex]?.name}</h1>
-                  <p className="text-xl md:text-lg font-display mb-5">{heroConfig.subtitle}</p>
+                  <p className="text-xl md:text-lg font-display">{heroConfig.subtitle}</p>
                   <Button 
                     text="See Product Details" 
-                    align="left" 
+                    align="center md:left" 
                     to={heroConfig.products[activeIndex]?.link || "/catalog"} 
                     className="mt-5" 
                   />
@@ -177,27 +157,8 @@ const Home = () => {
               )}
             </div>
           </div>
-
-
         </section>
 
-        {/* Sale Section 
-        <section className="promo flex flex-col items-center bg-accent md:flex-row p-5 font-display">
-          <div className="text-center md:text-left w-full md:w-1/2">
-            <h1 className="text-3xl md:text-2xl font-atemica">SALE!</h1>
-          </div>
-          <Link to="/product/sale" className="w-1/2 md:w-1/2 flex justify-center">
-            <img className="w-3/4 md:w-1/3 border-2" src={assets.imagePromo} alt="Promo" />
-            <h1 className="text-xl md:text-2xl  ml-5">Rp 49.000</h1>
-          </Link>
-          <div className="w-1/2 md:w-1/2 flex justify-center">
-            <img className="w-3/4 md:w-1/3 border-2" src={assets.imagePromo} alt="Promo" />
-            <div>
-              <h2 className="text-lg  ml-5 line-through  ">Rp 99.000</h2>
-              <h1 className="text-xl md:text-2xl  ml-5 text-red-600">Rp 49.000</h1>
-            </div> 
-          </div>
-        </section> */}
         <div className="flex flex-col items-center bg-accent md:flex-row p-5 font-display"></div>
         
         {/* Product Section */}
@@ -214,13 +175,11 @@ const Home = () => {
             }}
           ></div>
           
-          {/* Additional decorative elements for neo brutalism */}
           <div className="absolute top-10 left-10 w-20 h-20 border-3 border-matteblack rotate-12 opacity-20"></div>
           <div className="absolute top-32 right-16 w-16 h-16 bg-accent border-2 border-matteblack rotate-45 opacity-30"></div>
           <div className="absolute bottom-20 left-20 w-12 h-12 border-3 border-matteblack rotate-[-15deg] opacity-25"></div>
           <div className="absolute bottom-32 right-32 w-24 h-8 bg-matteblack opacity-20 rotate-6"></div>
-          
-          {/* Content with relative positioning to appear above background */}
+
           <div className="relative z-10">
             <div className="flex justify-center pt-12">
                 <h2 className="font-bricolage text-center text-4xl bg-accent px-6 py-3 border-3 border-matteblack shadow-matteblack transform rotate-[-1deg]">Our Catalog</h2>
@@ -231,46 +190,35 @@ const Home = () => {
         </section>
 
         {/* How To Order section */}
-        <section className='flex flex-col items-start md:items-center bg-accent p-10'>
+        <section className='flex flex-col items-start md:items-center bg-accent p-10 border-y-3'>
           <h2 className='text-4xl font-bricolage text-start pb-5'>How To Order</h2>
-          <div className='flex flex-col items-start border-3 p-5 shadow-matteblack'>
-            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step1}</h3>
-            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step2}</h3>
-            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step3}</h3>
-            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step4}</h3>
-            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step5}</h3>
-            <h3 className='text-xl font-display-bold text-center'>{howToOrder.step6}</h3>
+          <div className='flex flex-col items-start border-3 p-3 md:p-5 shadow-matteblack'>
+            <h3 className='text-sm md:text-xl font-display-bold text-center'>{howToOrder.step1}</h3>
+            <h3 className='text-sm md:text-xl font-display-bold text-center'>{howToOrder.step2}</h3>
+            <h3 className='text-sm md:text-xl font-display-bold text-center'>{howToOrder.step3}</h3>
+            <h3 className='text-sm md:text-xl font-display-bold text-center'>{howToOrder.step4}</h3>
+            <h3 className='text-sm md:text-xl font-display-bold text-center'>{howToOrder.step5}</h3>
+            <h3 className='text-sm md:text-xl font-display-bold text-center'>{howToOrder.step6}</h3>
+            <h3 className='text-sm md:text-xl font-display-bold text-center'>{howToOrder.step7}</h3>
+            <h3 className='text-sm md:text-xl font-display-bold text-center'>{howToOrder.step8}</h3>
           </div>
         </section>
 
         {/* About Section */}
-        <section id="about" className="flex flex-col p-10 border-t-3 items-center">
+        <section id="about" className="flex flex-col p-10 my-20 items-center">
           <h2 className="text-3xl font-bricolage text-center">About Us</h2>
 
-          <div className='max-w-4xl w-full space-y-6'>
+          <div className='max-w-4xl w-full space-y-'>
             <p className="font-display text-gray-600 leading-relaxed text-justify pt-8">
-            Selamat datang di platform belanja online Ospek Kit terintegrasi KWU! Kami menghadirkan pengalaman berbelanja praktis dan transparan untuk mahasiswa dengan sistem terotomatisasi yang dirancang khusus untuk kenyamanan Anda.
+            Welcome to the online shopping platform for Ospek Kit and Products from KWU! We offer a practical and transparent shopping experience for students with an automated system designed specifically for your convenience.
             </p>
-            <h3 className='font-display-bold text-xl mt-3 '>Keunggulan Sistem Kami</h3>
-            <ul className='font-display list-disc list-inside'>
-              <li>             
-                Notifikasi otomatis via email & SMS pada tiap tahap transaksi
-              </li>
-              <li>
-                Pengiriman otomatis ke alamat yang terdaftar
-              </li>
-              <li>
-                Pembayaran otomatis melalui transfer bank
-              </li>
-            </ul>
+            
           </div>
           
           {/* Social Media Section */}
-          <div className="grid grid-cols-2 md:grid-cols-4 justify-start gap-2 md:gap-4 p-2 md:p-5 w-full max-w-4xl font-display">
-            <a href="#" aria-label="Instagram" className='flex items-center gap-1 md:gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-all text-xs md:text-sm'><FaInstagram className="flex-shrink-0" /><span className="truncate">Instagram KWU</span></a>
+          <div className="grid grid-cols-2 justify-start gap-2 md:gap-4 p-2 md:p-5 w-full md:w-1/4 max-w-4xl font-display">
+            <a href="https://www.instagram.com/bemfasilkom.upnjatim?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" aria-label="Instagram" className='flex items-center gap-1 md:gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-all text-xs md:text-sm'><FaInstagram className="flex-shrink-0" /><span className="truncate">Instagram KWU</span></a>
             <a href="#" aria-label="TikTok" className='flex items-center gap-1 md:gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-all text-xs md:text-sm'><FaTiktok className="flex-shrink-0" /><span className="truncate">TikTok KWU</span></a>
-            <a href="#" aria-label="YouTube" className='flex items-center gap-1 md:gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-all text-xs md:text-sm'><FaYoutube className="flex-shrink-0" /><span className="truncate">Youtube KWU</span></a>
-            <a href="#" aria-label="Email" className='flex items-center gap-1 md:gap-2 p-2 bg-offwhite hover:bg-accent border-2 hover:border-black rounded-lg hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-all text-xs md:text-sm'><FaEnvelope className="flex-shrink-0" /><span className="truncate">Email KWU</span></a> 
           </div>
         </section>
 

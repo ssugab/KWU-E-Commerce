@@ -31,12 +31,9 @@ const Cart = () => {
     setCartData(tempData);
   },[cart, products])
 
-  // CART iS NOT AUTOMATICALLY UPDATED WHEN USER LOGGED IN AFTER LOGGED OUT -------------------------
-  // ------------------------------------------------------------------------------------------------
-
   useEffect(() => {
     if(!loading &&!isAuthenticated){
-      toast.error('Silakan login untuk melihat keranjang Anda');
+      toast.error('Please login to view your cart');
       navigate('/login');
     }
   }, [isAuthenticated, loading, navigate])
@@ -71,12 +68,10 @@ const Cart = () => {
             ) : 
             (
               cartData.map((item, index) => {
-                // console.log('🛒 Item:', item);
                 const productData = products.find((product) => product._id === item._id)
-                //console.log('🛒 Product Data:', productData);
 
                 if (!productData) {
-                  console.log('⚠️ Product not found for ID:', item._id);
+                  console.log('Product not found for ID:', item._id);
                   return (
                     <div key={index} className='border-2 border-red-300 bg-red-50 p-4 mb-2'>
                       <p className='text-red-600'>Product not found (ID: {item._id})</p>

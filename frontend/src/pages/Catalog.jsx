@@ -43,10 +43,10 @@ const Catalog = () => {
         const productPrice = product.price;
         return price.some(priceRange => {
           if(priceRange === 'Below 100') {
-            return productPrice < 100000; // Harga di bawah 100 ribu
+            return productPrice < 100000;
           }
           if(priceRange === 'Above 100') {
-            return productPrice >= 100000; // Harga 100 ribu ke atas
+            return productPrice >= 100000;
           }
           return false;
         });
@@ -131,8 +131,8 @@ const Catalog = () => {
                   <span>Accessories</span>
                 </label>
                 <label className='flex items-center gap-2 cursor-pointer hover:shadow-matteblack transition ease-in-out duration-300 p-2 rounded'>
-                  <input type="checkbox" className="form-checkbox" value={'Outer'} onChange={handleCategory}/>
-                  <span>Outer</span>
+                  <input type="checkbox" className="form-checkbox" value={'Ospek Kit'} onChange={handleCategory}/>
+                  <span>Ospek Kit</span>
                 </label>
                 {/* <Button text="Apply" to="/catalog" className="w-full text-center font-display-bold mt-10" onClick={applyFilter} /> */}
               </div>

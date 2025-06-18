@@ -13,14 +13,12 @@ const Payment = () => {
   const { getCurrentOrderFromSession } = useCheckout();
   const { isAuthenticated, loading: authLoading } = useAuth();
   
-  // 📦 STATE - Hanya yang diperlukan
-  const [order, setOrder] = useState(null);                    // Data pesanan
-  const [loading, setLoading] = useState(true);                // Loading state
-  const [paymentFile, setPaymentFile] = useState(null);        // File bukti bayar
-  const [filePreview, setFilePreview] = useState(null);        // Preview gambar
-  const [uploading, setUploading] = useState(false);           // Status upload
+  const [order, setOrder] = useState(null);                    
+  const [loading, setLoading] = useState(true);                
+  const [paymentFile, setPaymentFile] = useState(null); 
+  const [filePreview, setFilePreview] = useState(null);        
+  const [uploading, setUploading] = useState(false);           
 
-  // 🔐 CEK LOGIN - Redirect jika belum login
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       toast.error('Please login and order to see payment');
@@ -28,7 +26,6 @@ const Payment = () => {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  // 📋 LOAD ORDER - Ambil data pesanan
   useEffect(() => {
     const loadOrder = async () => {
       if (!isAuthenticated || authLoading) return;
@@ -58,26 +55,26 @@ const Payment = () => {
     loadOrder();
   }, [isAuthenticated, authLoading, getCurrentOrderFromSession, navigate]);
 
-  // 📁 HANDLE FILE UPLOAD - Validasi dan preview file
+  // HANDLE FILE UPLOAD - Validate and preview file
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // ✅ Validasi format file
+    // Validate file format
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Format file tidak didukung. Gunakan JPG, JPEG, atau PNG.');
+              toast.error('File format not supported. Use JPG, JPEG, or PNG.');
       return;
     }
 
-    // ✅ Validasi ukuran file (max 5MB)
+    // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      toast.error('Ukuran file terlalu besar. Maksimal 5MB.');
+      toast.error('File size too large. Maximum 5MB.');
       return;
     }
 
-    // 💾 Simpan file dan buat preview
+    // Save file and create preview
     setPaymentFile(file);
     
     const reader = new FileReader();
@@ -87,11 +84,11 @@ const Payment = () => {
     console.log('📁 File selected:', file.name);
   };
 
-  // 🚀 SUBMIT PAYMENT - Upload to Cloudinary
+  // SUBMIT PAYMENT - Upload to Cloudinary
   const submitPayment = async () => {
-    // ✅ Validate payment proof
+    // Validate payment proof
     if (!paymentFile) {
-      toast.error('Silakan pilih file bukti pembayaran terlebih dahulu.');
+      toast.error('Please select a payment proof file first.');
       return;
     }
 
@@ -104,17 +101,17 @@ const Payment = () => {
     try {
       console.log('🚀 Uploading payment proof to Cloudinary...');
       
-      // 📁 Prepare FormData for file upload
+      // Prepare FormData for file upload
       const formData = new FormData();
       formData.append('paymentProof', paymentFile);
       
-      console.log('📤 FormData prepared:', {
+      console.log(' FormData prepared:', {
         fileName: paymentFile.name,
         fileSize: paymentFile.size,
         fileType: paymentFile.type
       });
 
-      // 🌐 Upload to Cloudinary via backend
+      // Upload to Cloudinary via backend
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_ENDPOINTS.ORDERS.UPLOAD_PROOF(order._id)}`, {
         method: 'POST',
@@ -130,11 +127,11 @@ const Payment = () => {
       if (result.success) {
         console.log('✅ Payment proof uploaded successfully');
         const successMessage = isRejected 
-          ? 'Bukti pembayaran berhasil diupload ulang! Menunggu konfirmasi admin.' 
-          : 'Bukti pembayaran berhasil dikirim! Menunggu konfirmasi admin.';
+          ? 'Payment proof re-uploaded successfully! Waiting for admin confirmation.' 
+          : 'Payment proof sent successfully! Waiting for admin confirmation.';
         toast.success(successMessage);
         
-        // 🔄 Redirect to orders page after 2 seconds
+        // Redirect to orders page after 2 seconds
         setTimeout(() => {
           navigate('/orders');
         }, 2000);
@@ -143,13 +140,13 @@ const Payment = () => {
       }
     } catch (error) {
       console.error('❌ Error uploading payment proof:', error);
-      toast.error(error.message || 'Gagal mengirim bukti pembayaran');
+      toast.error(error.message || 'Failed to send payment proof');
     } finally {
       setUploading(false);
     }
   };
 
-  // 🔄 LOADING STATE
+  // LOADING STATE
   if (authLoading || loading) {
     return (
       <div className='min-h-screen flex items-center justify-center'>
@@ -163,7 +160,7 @@ const Payment = () => {
     );
   }
 
-  // ❌ NO ORDER STATE
+  // NO ORDER STATE
   if (!order) {
   return (
       <div className='min-h-screen flex items-center justify-center'>
@@ -176,7 +173,7 @@ const Payment = () => {
     );
   }
 
-  // 💰 Check payment status
+  // Check payment status
   const isPaid = order.paymentStatus === 'paid';
   const isRejected = order.paymentStatus === 'failed';
 
@@ -185,7 +182,7 @@ const Payment = () => {
       <div className='container mx-auto px-4 py-8'>
         <div className='max-w-4xl mx-auto'>
           
-          {/* 🔙 HEADER - Back to checkout */}
+          {/* HEADER - Back to checkout */}
           <div className='flex items-center gap-4 mb-6'>
             <button 
               onClick={() => navigate('/checkout')} 
@@ -196,12 +193,12 @@ const Payment = () => {
             </button>
           </div>
 
-          {/* 📋 TITLE */}
+          {/* TITLE */}
           <h1 className='font-atemica text-2xl md:text-3xl mb-8 text-gray-900'>
             {isRejected ? 'Upload Ulang Bukti Pembayaran' : 'Order Payment'}
           </h1>
 
-          {/* ❌ PAYMENT REJECTED NOTIFICATION */}
+          {/* PAYMENT REJECTED NOTIFICATION */}
           {isRejected && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start gap-3">
@@ -222,10 +219,10 @@ const Payment = () => {
             </div>
           )}
 
-          {/* 📊 MAIN CONTENT */}
+          {/* MAIN CONTENT */}
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
             
-            {/* 📋 LEFT: ORDER SUMMARY */}
+            {/* LEFT: ORDER SUMMARY */}
             <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
               <h2 className='font-atemica text-xl mb-6 text-gray-900'>📋 Order Summary</h2>
               
@@ -251,7 +248,7 @@ const Payment = () => {
                 </div>
               </div>
 
-              {/* 💳 PAYMENT STATUS */}
+              {/* PAYMENT STATUS */}
               <div className='bg-gray-50 p-4 rounded-lg'>
                 <div className='flex items-center gap-2 mb-2'>
                   {isPaid ? (
@@ -275,10 +272,10 @@ const Payment = () => {
               </div>
             </div>
 
-            {/* 💳 RIGHT: PAYMENT METHOD */}
+            {/* RIGHT: PAYMENT METHOD */}
             <div className='space-y-6'>
               
-              {/* 📱 QR CODE */}
+              {/* QR CODE */}
               <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
                 <h2 className='font-atemica text-xl mb-6 text-gray-900'>💳 Scan to Pay</h2>
                 
@@ -302,9 +299,9 @@ const Payment = () => {
                 </div>
               </div>
 
-              {/* 📤 UPLOAD SECTION atau SUCCESS MESSAGE */}
+              {/* UPLOAD SECTION atau SUCCESS MESSAGE */}
               {isPaid ? (
-                // ✅ SUCCESS MESSAGE
+                // SUCCESS MESSAGE
                 <div className='bg-green-50 border-2 border-green-200 rounded-xl p-6'>
                   <div className='text-center'>
                     <FaCheckCircle className='mx-auto h-16 w-16 text-green-500 mb-4' />
@@ -320,13 +317,13 @@ const Payment = () => {
                   </div>
                 </div>
               ) : (
-                // 📤 UPLOAD FORM
+                // UPLOAD FORM
                 <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
                   <h2 className='font-atemica text-xl mb-6 text-gray-900'>
                     📤 {isRejected ? 'Upload Ulang Bukti Pembayaran' : 'Upload Payment Proof'}
                   </h2>
                   
-                  {/* 📋 Tips untuk upload ulang */}
+                  {/* Tips untuk upload ulang */}
                   {isRejected && (
                     <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-yellow-800 font-medium text-sm mb-2">💡 Tips untuk upload yang benar:</p>
@@ -340,7 +337,7 @@ const Payment = () => {
                   )}
                   
                   <div className='space-y-4'>
-                    {/* 📁 FILE INPUT */}
+                    {/* FILE INPUT */}
                     <div>
                       <label className='block text-sm font-medium text-gray-700 mb-2'>
                         Select Payment Proof File *
@@ -373,7 +370,7 @@ const Payment = () => {
                       </label>
                     </div>
 
-                    {/* 🖼️ PREVIEW */}
+                    {/* PREVIEW */}
                     {filePreview && (
                       <div>
                         <label className='block text-sm font-medium text-gray-700 mb-2'>
@@ -399,10 +396,10 @@ const Payment = () => {
                       </div>
                     )}
 
-                    {/* 🚀 SUBMIT BUTTON */}
+                    {/* SUBMIT BUTTON */}
                     <Button
-                      text={uploading ? 'Mengirim...' : 
-                            isRejected ? 'Upload Ulang Bukti Pembayaran' : 
+                      text={uploading ? 'Sending...' : 
+                            isRejected ? 'Upload Again Payment Proof' : 
                             'Submit Payment Proof'}
                       onClick={submitPayment}
                       disabled={!paymentFile || uploading}
@@ -413,7 +410,7 @@ const Payment = () => {
                       }`}
                     />
 
-                    {/* 📝 INSTRUCTIONS */}
+                    {/* INSTRUCTIONS */}
                     <div className='bg-blue-50 p-4 rounded-lg'>
                       <h4 className='font-semibold text-blue-900 mb-2'>Instructions:</h4>
                       <ul className='text-sm text-blue-800 space-y-1'>
@@ -430,7 +427,7 @@ const Payment = () => {
             </div>
           </div>
 
-          {/* 📞 CONTACT INFO */}
+          {/* CONTACT INFO */}
           <div className='mt-8 bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6'>
             <h3 className='font-semibold text-yellow-900 mb-2'>Need Help?</h3>
             <p className='text-yellow-800 text-sm mb-3'>

@@ -35,7 +35,6 @@ const Checkout = () => {
     setCartData(tempData);
   },[cart])
 
-  // Tampilkan pesan jika cart kosong setelah loading selesai
   const isCartEmpty = cartData.length === 0 && products.length > 0;
 
   useEffect(() => {
@@ -54,7 +53,6 @@ const Checkout = () => {
 
     setIsProcessing(true);
     try {
-      // Validasi data order
       const subtotal = getCartAmount();
 
       if (subtotal <= 0) {
@@ -62,7 +60,6 @@ const Checkout = () => {
         return;
       }
 
-      // Gunakan data user yang sudah ada
       const userData = {
         name: user.name,
         email: user.email,
@@ -70,25 +67,23 @@ const Checkout = () => {
         npm: user.npm
       };
 
-      // Buat order menggunakan useCheckout hook
       const result = await createOrder(userData, cartData, subtotal);
       
       if (result.success) {
-        toast.success('Pesanan berhasil dibuat! Lanjut ke pembayaran...');
+        toast.success('Order created! Proceed to payment...');
         clearCart();
         navigate('/payment');
       } else {
-        toast.error(result.message || 'Gagal membuat pesanan');
+        toast.error(result.message || 'Failed to create order');
       }
     } catch (error) {
       console.error('❌ Error creating order:', error);
-      toast.error('Terjadi kesalahan. Silakan coba lagi.');
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Loading state - cek auth loading dulu
   if (loading || checkoutLoading) {
     return (
       <div className='min-h-screen flex items-center justify-center'>
@@ -102,7 +97,6 @@ const Checkout = () => {
     );
   }
 
-  // Tampilkan pesan jika cart kosong setelah loading selesai
   if (isCartEmpty) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-offwhite2'>
@@ -157,7 +151,7 @@ const Checkout = () => {
             {/* Left Column - Info */}
             <div className='lg:col-span-2 space-y-6'>
               
-              {/* Customer Information - Display Only */}
+              {/* Customer Information */}
               <div className='bg-white border-2 shadow-matteblack rounded-xl p-6 shadow-sm'>
                 <h2 className='font-atemica text-xl mb-6 text-gray-900 flex items-center gap-2'>
                   <FaUser className="w-5 h-5" />
@@ -207,7 +201,7 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Pickup Address Section */}
+              {/* Pickup Address */}
               <div className='bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm'>
                 <h2 className='font-atemica text-xl mb-4 text-gray-900 flex items-center gap-2'>
                   📍 <span>Pickup Address</span>
@@ -216,16 +210,16 @@ const Checkout = () => {
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                     <div>
                       <p className='text-sm text-gray-600 mb-1'>Contact Person:</p>
-                      <p className='font-medium text-gray-900'>081348886432 (Eza)</p>
+                      <p className='font-medium text-gray-900'>0896-3000-0157 (Vania)</p>
                     </div>
                     <div>
                       <p className='text-sm text-gray-600 mb-1'>Operating Hours:</p>
-                      <p className='text-gray-700'>Monday - Friday: 09:00 - 17:00</p>
+                      <p className='text-gray-700'>Monday - Friday: 09:00 - 16:00</p>
                     </div>
                   </div>
                   <div className='mt-4'>
                     <p className='text-sm text-gray-600 mb-1'>Address:</p>
-                    <p className='text-gray-700'>BEM Fakultas & Badan/UKM Keceh, Gn. Anyar, Kec. Gn. Anyar, Surabaya, Jawa Timur</p>
+                    <p className='text-gray-700'>BEM Fakultas Ilmu Komputer Universitas Pembangunan Nasional Veteran Jawa Timur</p>
                   </div>
                   <div className='mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200'>
                     <p className='text-sm text-blue-800'>

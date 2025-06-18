@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 const Orders = () => {
   const { navigate } = useContext(ShopContext);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const { getOrdersByEmail, cancelOrder, confirmReceiptOrder } = useCheckout();
+  const { getOrdersByEmail, confirmReceiptOrder } = useCheckout();
   
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,18 +17,16 @@ const Orders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderDetail, setShowOrderDetail] = useState(false);
-  const [cancelling, setCancelling] = useState(null);
+  // const [cancelling, setCancelling] = useState(null);
 
-  // Load orders saat component mount
+  // Load orders when component mounts
   useEffect(() => {
-    // Tunggu sampai loading selesai sebelum redirect
     if (!authLoading && !isAuthenticated) {
-      toast.error('Silakan login terlebih dahulu untuk melihat pesanan');
+      toast.error('Please login first to view your orders');
       navigate('/login');
       return;
     }
 
-    // Load orders hanya jika sudah authenticated dan tidak loading
     if (!authLoading && isAuthenticated) {
       loadOrders();
     }
@@ -47,11 +45,11 @@ const Orders = () => {
         setOrders(result.orders);
         setPagination(result.pagination);
       } else {
-        toast.error(result.message || 'Gagal memuat pesanan');
+        toast.error(result.message || 'Failed to load orders');
       }
     } catch (error) {
       console.error('Error loading orders:', error);
-      toast.error('Terjadi kesalahan saat memuat pesanan');
+      toast.error('Error loading orders');
     } finally {
       setLoading(false);
     }
@@ -63,44 +61,45 @@ const Orders = () => {
     setShowOrderDetail(true);
   };
 
-  // Handle cancel order - Simplified
+  /* Handle cancel order - user currently cannot cancel order (only admin can cancel order)
+  TODO: Add cancel order consent from user later
   const handleCancelOrder = async (orderId, orderNumber) => {
-    if (!confirm(`Yakin batalkan pesanan ${orderNumber}?`)) return;
+    if (!confirm(`Are you sure you want to cancel order ${orderNumber}?`)) return;
 
     setCancelling(orderId);
     try {
-      const result = await cancelOrder(orderId, 'Dibatalkan oleh customer');
+      const result = await cancelOrder(orderId, 'Cancelled by customer');
       
       if (result.success) {
         toast.success('Order successfully cancelled');
         loadOrders();
       } else {
-        toast.error(result.message || 'Gagal membatalkan pesanan');
+        toast.error(result.message || 'Failed to cancel order');
       }
     } catch (error) {
       console.error('Error cancelling order:', error);
-      toast.error('Terjadi kesalahan saat membatalkan pesanan');
+      toast.error('Error cancelling order');
     } finally {
       setCancelling(null);
     }
-  };
+  }; */
 
-  // Handle confirm receipt - User konfirmasi penerimaan pesanan
-  const handleConfirmReceipt = async (orderId, orderNumber) => {
-    if (!confirm(`Konfirmasi bahwa Anda sudah menerima pesanan ${orderNumber}?`)) return;
+  // Handle confirm order receipt
+  const handleConfirmReceipt = async (orderId) => {
+    if (!confirm(`Confirm that you have received the order?`)) return;
 
     try {
-      const result = await confirmReceiptOrder(orderId, 'Pesanan sudah diterima dengan baik');
+      const result = await confirmReceiptOrder(orderId, 'Order received successfully');
       
       if (result.success) {
-        toast.success('Konfirmasi penerimaan pesanan berhasil!');
+        toast.success('Order confirmation successful!');
         loadOrders(); // Refresh orders
       } else {
-        toast.error(result.message || 'Gagal konfirmasi penerimaan pesanan');
+        toast.error(result.message || 'Failed to confirm receipt');
       }
     } catch (error) {
       console.error('Error confirming receipt:', error);
-      toast.error('Terjadi kesalahan saat konfirmasi penerimaan pesanan');
+      toast.error('Error confirming receipt');
     }
   };
 
@@ -111,37 +110,37 @@ const Orders = () => {
         return {
           color: 'text-orange-600 bg-orange-100',
           icon: <FaClock className="w-4 h-4" />,
-          label: 'Menunggu Konfirmasi'
+          label: 'Waiting for Confirmation'
         };
       case 'confirmed':
         return {
           color: 'text-blue-600 bg-blue-100',
           icon: <FaCheckCircle className="w-4 h-4" />,
-          label: 'Dikonfirmasi'
+          label: 'Confirmed'
         };
       case 'ready_pickup':
         return {
           color: 'text-green-600 bg-green-100',
           icon: <FaBox className="w-4 h-4" />,
-          label: 'Siap Diambil'
+          label: 'Ready to Pickup'
         };
       case 'picked_up':
         return {
           color: 'text-green-700 bg-green-200',
           icon: <FaShippingFast className="w-4 h-4" />,
-          label: 'Sudah Diambil'
+          label: 'Picked Up'
         };
       case 'cancelled':
         return {
           color: 'text-red-600 bg-red-100',
           icon: <FaTimesCircle className="w-4 h-4" />,
-          label: 'Dibatalkan'
+          label: 'Cancelled'
         };
       case 'expired':
         return {
           color: 'text-gray-600 bg-gray-100',
           icon: <FaTimesCircle className="w-4 h-4" />,
-          label: 'Kadaluarsa'
+          label: 'Expired'
         };
       default:
         return {
@@ -156,24 +155,24 @@ const Orders = () => {
   const getPaymentStatusInfo = (paymentStatus) => {
     switch (paymentStatus) {
       case 'paid':
-        return { color: 'text-green-600', label: 'Sudah Dibayar' };
+        return { color: 'text-green-600', label: 'Paid' };
       case 'pending':
-        return { color: 'text-orange-600', label: 'Menunggu Pembayaran' };
+        return { color: 'text-orange-600', label: 'Pending' };
       case 'failed':
-        return { color: 'text-red-600', label: 'Pembayaran Gagal' };
+        return { color: 'text-red-600', label: 'Failed' };
       default:
         return { color: 'text-gray-600', label: paymentStatus };
     }
   };
 
-  // Loading state - cek auth loading dulu
+  // Loading state
   if (authLoading || loading) {
     return (
       <div className='min-h-screen flex items-center justify-center'>
         <div className='text-center'>
           <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4'></div>
           <p className='text-gray-600'>
-            {authLoading ? 'Memverifikasi login...' : 'Memuat pesanan Anda...'}
+            {authLoading ? 'Verifying login...' : 'Loading your orders...'}
           </p>
         </div>
       </div>
@@ -184,13 +183,13 @@ const Orders = () => {
     <div className='min-h-screen bg-offwhite2 pb-10'>
       {/* Header */}
       <div className="flex justify-center md:justify-start bg-accent border-b-4">
-        <h1 className="font-atemica text-center text-3xl ml-0 md:ml-15 mt-10 mb-5">Pesanan Saya</h1>
+        <h1 className="font-atemica text-center text-3xl ml-0 md:ml-15 mt-10 mb-5">My Orders</h1>
       </div>
 
       <div className='container mx-auto px-4 py-8'>
         <div className='max-w-6xl mx-auto'>
           
-          {/* User Info 
+          {/* User Info - coming soon
           {user && (
             <div className='bg-white border-2 border-matteblack rounded-xl p-6 mb-8 shadow-matteblack'>
               <h2 className='font-atemica text-xl mb-4'>Informasi Akun</h2>
@@ -248,7 +247,7 @@ const Orders = () => {
                               </span>
                               {order.status === 'ready_pickup' && (
                                 <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium animate-pulse">
-                                  Pickup dalam 7 hari!
+                                  Pickup max in 7 days!
                                 </span>
                               )}
                             </div>
@@ -260,23 +259,23 @@ const Orders = () => {
                               <div className="flex items-start gap-3">
                                 <div className="text-red-600 text-xl">❌</div>
                                 <div className="flex-1">
-                                  <p className="text-red-800 font-bold mb-1">Bukti Pembayaran Ditolak!</p>
+                                  <p className="text-red-800 font-bold mb-1">Payment Proof Rejected!</p>
                                   <p className="text-red-700 text-sm mb-3">
-                                    Bukti pembayaran yang Anda upload tidak valid atau tidak jelas. Silakan upload ulang bukti pembayaran yang benar.
+                                    The payment proof you uploaded is invalid or unclear. Please upload a valid payment proof.
                                   </p>
                                   {order.adminNotes && (
                                     <div className="text-sm text-red-600 bg-red-100 p-2 rounded mb-3">
-                                      <p className="font-medium">Alasan penolakan:</p>
+                                      <p className="font-medium">Rejection Reason:</p>
                                       <p>{order.adminNotes}</p>
                                     </div>
                                   )}
                                   <div className="text-sm text-red-600 space-y-1">
-                                    <p className="font-medium">📋 Tips upload bukti pembayaran:</p>
+                                    <p className="font-medium">📋 Tips upload payment proof:</p>
                                     <ul className="list-disc list-inside space-y-1 text-red-700">
-                                      <li>Pastikan foto jelas dan tidak blur</li>
-                                      <li>Foto harus menunjukkan nama penerima yang benar</li>
-                                      <li>Jumlah transfer harus sesuai dengan total pesanan</li>
-                                      <li>Screenshot dari aplikasi mobile banking resmi</li>
+                                      <li>Make sure the photo is clear and not blurry</li>
+                                      <li>The photo must show the correct recipient's name</li>
+                                      <li>The transfer amount must match the total order amount</li>
+                                      <li>Screenshot from a legitimate mobile banking application</li>
                                     </ul>
                                   </div>
                                 </div>
@@ -290,17 +289,17 @@ const Orders = () => {
                               <div className="flex items-start gap-3">
                                 <div className="text-green-600 text-xl">🎉</div>
                                 <div className="flex-1">
-                                  <p className="text-green-800 font-bold mb-1">Pesanan Siap Diambil!</p>
+                                  <p className="text-green-800 font-bold mb-1">Order ready for pickup!</p>
                                   <p className="text-green-700 text-sm mb-3">
-                                    Pesanan Anda sudah siap untuk diambil. Silakan datang ke lokasi pickup.
+                                    Your order is ready for pickup. Please come to the pickup location.
                                   </p>
                                   <div className="text-sm text-green-600 space-y-1">
-                                    <p className="font-medium">📍 Lokasi Pickup:</p>
-                                    <p>BEM Fakultas & Badan/UKM Keceh, Gn. Anyar, Surabaya</p>
-                                    <p>📞 WA: 081348886432 (Eza)</p>
-                                    <p>🕒 Senin-Jumat: 09:00-17:00</p>
+                                    <p className="font-medium">📍 Pickup Location:</p>
+                                    <p>BEM Fakultas Ilmu Komputer, Universitas Pembangunan Nasional Veteran Jawa Timur, Surabaya</p>
+                                    <p>📞 WA: 0896-3000-0157 (Vania) / 081234567890 (Admin)</p>
+                                    <p>🕒 Monday-Friday: 09:00-16:00</p>
                                     <p className="mt-2 text-orange-700 font-medium bg-orange-100 px-2 py-1 rounded">
-                                      ⚠️ Harap diambil dalam 7 hari sebelum expired
+                                      ⚠️ Please pick up within 7 days before expiration
                                     </p>
                                   </div>
                                 </div>
@@ -327,7 +326,7 @@ const Orders = () => {
                             </div>
                           </div>
 
-                          {/* Admin Notes */}
+                          {/* Admin Notes - only for admin */}
                           {order.adminNotes && (
                             <div className='mt-3 p-3 bg-blue-50 rounded-lg'>
                               <p className='text-sm text-blue-800'>
@@ -347,7 +346,7 @@ const Orders = () => {
                             <FaEye className="w-3 h-3" />
                           </Button>
                           
-                          {/* Cancel button - only for pending orders */}
+                          {/* Cancel button - only for pending orders 
                           {(order.status === 'pending_confirmation' && order.paymentStatus !== 'paid') && (
                             <Button
                               text={cancelling === order._id ? "Membatalkan..." : "Batalkan"}
@@ -355,12 +354,12 @@ const Orders = () => {
                               disabled={cancelling === order._id}
                               className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2"
                             />
-                          )}
+                          )} */}
 
                           {/* Payment button - for unpaid orders */}
-                          {order.paymentStatus === 'pending' && order.status !== 'cancelled' && (
+                          {order.paymentStatus === 'pending' && order.status !== 'cancelled' && order.status !== 'expired' && order.status !== 'ready_pickup' && order.status !== 'picked_up' && (
                             <Button
-                              text="Bayar"
+                              text="Pay Now"
                               onClick={() => {
                                 sessionStorage.setItem('currentOrderId', order._id);
                                 navigate('/payment');
@@ -369,10 +368,10 @@ const Orders = () => {
                             />
                           )}
 
-                          {/* Upload Ulang button - for rejected payment orders */}
+                          {/* Reupload payment proof button - for rejected payment orders */}
                           {order.paymentStatus === 'failed' && order.status === 'pending_confirmation' && (
                             <Button
-                              text="Upload Ulang"
+                              text="Reupload Payment Proof"
                               onClick={() => {
                                 sessionStorage.setItem('currentOrderId', order._id);
                                 navigate('/payment');
@@ -384,8 +383,8 @@ const Orders = () => {
                           {/* Confirm Receipt button - for ready_pickup orders */}
                           {order.status === 'ready_pickup' && (
                             <Button
-                              text="Konfirmasi Diterima"
-                              onClick={() => handleConfirmReceipt(order._id, order.orderNumber)}
+                              text="Confirm Receipt"
+                              onClick={() => handleConfirmReceipt(order._id)}
                               className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2"
                             />
                           )}
@@ -457,13 +456,13 @@ const Orders = () => {
                     </p>
                     <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod || 'QRIS'}</p>
                     {selectedOrder.notes && (
-                      <p><strong>Catatan:</strong> {selectedOrder.notes}</p>
+                      <p><strong>Notes:</strong> {selectedOrder.notes}</p>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Items */}
+              {/* Order Items */}
               <div className='mt-6'>
                 <h3 className='font-semibold text-lg border-b pb-2 mb-4'>Order Items</h3>
                 <div className='space-y-3'>
@@ -533,13 +532,13 @@ const Orders = () => {
               {/* Modal Actions */}
               <div className='mt-6 flex justify-end gap-3'>
                 <Button
-                  text="Tutup"
+                  text="Close"
                   onClick={() => setShowOrderDetail(false)}
                   className="bg-gray-600 hover:bg-gray-700 text-white"
                 />
-                {selectedOrder.paymentStatus === 'pending' && selectedOrder.status !== 'cancelled' && (
+                {selectedOrder.paymentStatus === 'pending' && selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'expired' && selectedOrder.status !== 'ready_pickup' && selectedOrder.status !== 'picked_up' && (
                   <Button
-                    text="Lanjut Pembayaran"
+                    text="Continue Payment"
                     onClick={() => {
                       sessionStorage.setItem('currentOrderId', selectedOrder._id);
                       setShowOrderDetail(false);
@@ -549,6 +548,7 @@ const Orders = () => {
                   />
                 )}
               </div>
+              
             </div>
           </div>
         </div>
